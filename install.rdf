@@ -5,7 +5,7 @@
 	<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	  <Description about="urn:mozilla:install-manifest">
 		<em:id>Zoomr@jetpack</em:id>
-		<em:version>initial</em:version>
+		<em:version>1.0</em:version>
 		<em:type>2</em:type>
 		<em:bootstrap>true</em:bootstrap>
 		<em:unpack>false</em:unpack>
@@ -21,7 +21,7 @@
 
 		<!-- Front End MetaData -->
 		<em:name>Zoomr</em:name>
-		<em:description>ff-addon: Simulates the smart zoom of mobile devices and tablets on desktop. Instead of double tapping though, click and hold to smart </em:description>
+		<em:description>Simulates the smart zoom of mobile devices and tablets on desktop. Instead of double tapping though, click and hold to zoom on a paragraph, image, etc.</em:description>
 		<em:creator>Noitidart</em:creator>
 		<em:creator>jmiller29 for Idea</em:creator>
 		<em:creator>Isaac Grant for Icon</em:creator>

@@ -45,7 +45,7 @@ function outlineHelper(e) {
     var cScale = el.doc.el.style.transform.match(/\d+\.\d+/);
     cScale = cScale ? parseFloat(cScale) : 1;
     if (cScale != 1) {
-        console.info('Zoomr :: ','already zoomed in');
+('Zoomr :: ','already zoomed in');
         myServices.as.showAlertNotification(self.aData.resourceURI.asciiSpec + 'icon.png', 'DblTabZoom - Outline Fail', 'Already zoomed in');
         return;
     }
@@ -54,7 +54,7 @@ function outlineHelper(e) {
             //zooming out
             el.parent.el = el.target.el;
         } else {
-            console.info('Zoomr :: ','EXCEPTION - need to zoom in but returning as el.parent.el is undefined');
+('Zoomr :: ','EXCEPTION - need to zoom in but returning as el.parent.el is undefined');
              return;
        }
     } else {
@@ -70,12 +70,12 @@ function outlineHelper(e) {
             if (scaleBy > scaleMax) {
                 //el.parent.el = el.parent.el.parentNode;
                 //r = -1;
-                //console.info('Zoomr :: ','going beyond~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+('Zoomr :: ','going beyond~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
             }
         }
    
         if (scaleBy < scaleMin) {
-            console.info('Zoomr :: ','scaleBy < scaleMin so not scalling. scaleBy = ' + scaleBy);
+('Zoomr :: ','scaleBy < scaleMin so not scalling. scaleBy = ' + scaleBy);
             myServices.as.showAlertNotification(self.aData.resourceURI.asciiSpec + 'icon.png', 'DblTabZoom - Failed Zoom', 'scaleBy < scaleMin so not scalling. scaleBy = ' + scaleMin);
             return;
         }
@@ -90,15 +90,15 @@ function outlineHelper(e) {
 
 //consider zooming parent if target == parent. then on second click zoom target
     if (cScale == 1) {
-        console.info('Zoomr :: ','nothing is zoomed so zoom parent');
+('Zoomr :: ','nothing is zoomed so zoom parent');
         zEl = 'parent';
         gEl = 'target';
     } else if (cScale != 1) {
-        console.info('Zoomr :: ','parent is zoomed so zoomout');
+('Zoomr :: ','parent is zoomed so zoomout');
         zEl = 'doc';
         gEl = 'target';
     } else {
-        console.info('Zoomr :: ','zoom parent');       
+('Zoomr :: ','zoom parent');       
         zEl = 'parent';
         gEl = 'target';
     }
@@ -107,7 +107,7 @@ function outlineHelper(e) {
 }
 
 function boxit(el) {
-console.info('Zoomr :: ','doing box');
+('Zoomr :: ','doing box');
     var win = el.ownerDocument.defaultView.top;
     var doc = win.document;
    
@@ -132,7 +132,7 @@ var added = false;
 function keyDowned(e) {
     if (added) { return }
 	if (timeout) {
-	   console.info('Zoomr :: ','keydowned before timeout fired - clearing it');
+('Zoomr :: ','keydowned before timeout fired - clearing it');
 	   var win = e.originalTarget.ownerDocument.defaultView;
 	   timeoutWin.clearTimeout(timeout);
 	   timeout = null;
@@ -148,13 +148,13 @@ function keyDowned(e) {
 															.QueryInterface(Ci.nsIInterfaceRequestor)
 															.getInterface(Ci.nsIDOMWindow);
         DOMWindow.gBrowser.addEventListener('mouseover',outlineHelper,true);
-        console.info('Zoomr :: ','added');
+('Zoomr :: ','added');
         //use ctypes to get coords and then elem from point and then outlineHelper that
     }
 }
 function keyUpped(e) {
 	if (timeout) {
-	   console.info('Zoomr :: ','keyupped before timeout fired - clearing it');
+('Zoomr :: ','keyupped before timeout fired - clearing it');
 	   var win = e.originalTarget.ownerDocument.defaultView;
 	   timeoutWin.clearTimeout(timeout);
 	   timeout = null;
@@ -162,7 +162,7 @@ function keyUpped(e) {
 	   win.removeEventListener('dragstart', dragstarted,true);
    }
     if (e.shiftKey || e.ctrlKey) {
-        console.info('Zoomr :: ','exit as shift or ctrl upped');
+('Zoomr :: ','exit as shift or ctrl upped');
 		var DOMWindow = e.target.ownerDocument.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
 															.getInterface(Ci.nsIWebNavigation)
 															.QueryInterface(Ci.nsIDocShellTreeItem)
@@ -189,10 +189,10 @@ function moved(e) {
     var diffX = Math.abs(initX - cX);
     var diffY = Math.abs(initY - cY);
     if (diffX < 3 && diffY < 3) {
-        //console.info('Zoomr :: ','moved but it is within 3px of init so dont clear listen for hold yet diffs: ' + diffX + ', ' + diffY);
+('Zoomr :: ','moved but it is within 3px of init so dont clear listen for hold yet diffs: ' + diffX + ', ' + diffY);
         return;
     }
-   console.info('Zoomr :: ','moved - clearing listening for hold, diffs: ' + diffX + ', ' + diffY);
+('Zoomr :: ','moved - clearing listening for hold, diffs: ' + diffX + ', ' + diffY);
    var win = e.originalTarget.ownerDocument.defaultView;
    win.removeEventListener('mousemove', moved, true);
    win.removeEventListener('dragstarted', dragstarted, true);
@@ -202,7 +202,7 @@ function moved(e) {
 }
 
 function dragstarted(e) {
-   console.info('Zoomr :: ','dragStarted - clearing listening for hold');
+('Zoomr :: ','dragStarted - clearing listening for hold');
    var win = e.originalTarget.ownerDocument.defaultView;
    win.removeEventListener('dragstarted', dragstarted, true);
    win.removeEventListener('mousemove', moved, true);
@@ -223,7 +223,7 @@ function downed(e) {
     if (!timeout && e.button != trigger) { return;}
     if (timeout && e.button != trigger) {
 		if (timeout) { //this is redundant if but i copied pasted from other preventers in like wheeled etc this so leaving for consistency
-		   console.info('Zoomr :: ','mousedowned another button before timeout fired - clearing it');
+('Zoomr :: ','mousedowned another button before timeout fired - clearing it');
 		   var win = e.originalTarget.ownerDocument.defaultView;
 		   timeoutWin.clearTimeout(timeout);
 		   timeout = null;
@@ -234,7 +234,7 @@ function downed(e) {
 	}
 	
     zoomed = false;
-	console.info('Zoomr :: ', 'downed e = ', e);
+('Zoomr :: ', 'downed e = ', e);
 	Cu.import('chrome://cdumpjsm/content/cDump.jsm');
 	
 	//cDump(e.originalTarget,{t:'e.originalTarget downed',inbg:true});
@@ -242,7 +242,7 @@ function downed(e) {
 	if (Object.prototype.toString.call(e.view) == '[object ChromeWindow]') {
 		//this works for findbar
 		if (e.view.gBrowser) {
-			console.warn('Zoomr :: ','e.view is chromeWindow and this chromeWindow has a gBrowser SO RETURN','e.view = ',e.view);
+('Zoomr :: ','e.view is chromeWindow and this chromeWindow has a gBrowser SO RETURN','e.view = ',e.view);
 			return;
 		}
 	}
@@ -251,13 +251,13 @@ function downed(e) {
 	try {
 		var ownerDocument = e.originalTarget.ownerDocument;
 	} catch (ex) {
-		console.info('Zoomr :: ', 'exception when trying to get owner document of originaltarget meaning this is likely a scrollbar so return','ex=',ex);
+('Zoomr :: ', 'exception when trying to get owner document of originaltarget meaning this is likely a scrollbar so return','ex=',ex);
 		return;
 	}
 	*/
 	if (e.originalTarget.namespaceURI == 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul') {
 		//this works for scrollbar
-		console.warn('Zoomr :: ','e.originalTarget.namespaceURI is xul so return', 'e.originalTarget=', e.originalTarget);
+('Zoomr :: ','e.originalTarget.namespaceURI is xul so return', 'e.originalTarget=', e.originalTarget);
 		return;
 	}
 	//end - test to see if user is on scroll bar
@@ -266,7 +266,7 @@ function downed(e) {
         var win = e.originalTarget.ownerDocument.defaultView;
         initX = e.clientX;
         initY = e.clientY;
-        //console.info('Zoomr :: ','init: ' + initX + ', ' + initY);
+('Zoomr :: ','init: ' + initX + ', ' + initY);
         timeoutWin = win;
         timeout = win.setTimeout(function() { zoom(e) }, holdTime);
         win.addEventListener('mousemove', moved, true);
@@ -275,7 +275,7 @@ function downed(e) {
         return;
     }
     zoom(e);
-    console.info('Zoomr :: ','zoomed - down prevd');
+('Zoomr :: ','zoomed - down prevd');
     e.stopPropagation();
     e.preventDefault();
     e.returnValue = false;
@@ -288,23 +288,23 @@ function upped(e) {
     //if (e.clientX == 0 && e.clientY == 0) {
          //if x y 0 0 its synth, most likely
         //dont prev it
-        //console.info('Zoomr :: ','UnPrevd - suspecting Synth Up');
-        console.info('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
+('Zoomr :: ','UnPrevd - suspecting Synth Up');
+('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
     } else if (zoomed) {
-        console.info('Zoomr :: ','up prevd');
+('Zoomr :: ','up prevd');
         e.stopPropagation();
         e.preventDefault();
         e.returnValue = false;
     } else {
         if (timeout) {
-           console.info('Zoomr :: ','upped before timeout fired - clearing it');
+('Zoomr :: ','upped before timeout fired - clearing it');
            var win = e.originalTarget.ownerDocument.defaultView;
            timeoutWin.clearTimeout(timeout);
            timeout = null;
            win.removeEventListener('mousemove', moved, true);
            win.removeEventListener('dragstart', dragstarted,true);
        } else {
-          //console.info('Zoomr :: ','upped but tiemout already cleared');
+('Zoomr :: ','upped but tiemout already cleared');
        }
     }
 }
@@ -316,10 +316,10 @@ function clicked(e) {
     //if (e.clientX == 0 && e.clientY == 0) {
          //if x y 0 0 its synth, most likely
         //dont prev it
-        //console.info('Zoomr :: ','UnPrevd - suspecting Synth Up');
-        console.info('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
+('Zoomr :: ','UnPrevd - suspecting Synth Up');
+('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
     } else if (zoomed) {
-        console.info('Zoomr :: ','click prevd');
+('Zoomr :: ','click prevd');
         e.stopPropagation();
         e.preventDefault();
         e.returnValue = false;
@@ -328,7 +328,7 @@ function clicked(e) {
 
 function wheeled(e) {
 	if (timeout) {
-	   console.info('Zoomr :: ','wheeled before timeout fired - clearing it');
+('Zoomr :: ','wheeled before timeout fired - clearing it');
 	   var win = e.originalTarget.ownerDocument.defaultView;
 	   timeoutWin.clearTimeout(timeout);
 	   timeout = null;
@@ -347,7 +347,7 @@ function zoom(e) {
 
     if (timeout)    {
        var utils = timeoutWin.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils);
-      console.info('Zoomr :: ','sending synthetic mouseup');
+('Zoomr :: ','sending synthetic mouseup');
       //utils.sendMouseEvent('mouseup',0,0,trigger,1,0);
 		var mouseEvent = timeoutWin.document.createEvent('MouseEvents')
 		var mouseEventParam = {
@@ -395,14 +395,14 @@ function zoom(e) {
    
     var cScale = el.doc.el.style.transform.match(/\d+\.\d+/);
     cScale = cScale ? parseFloat(cScale) : 1;
-    console.info('Zoomr :: ','cScale = ' + cScale);
+('Zoomr :: ','cScale = ' + cScale);
    
     if (!el.parent.el) {
         if (cScale != 1) {
             //zooming out
             el.parent.el = el.target.el;
         } else {
-            console.info('Zoomr :: ','EXCEPTION - need to zoom in but returning as el.parent.el is undefined');
+('Zoomr :: ','EXCEPTION - need to zoom in but returning as el.parent.el is undefined');
              return;
        }
     } else {
@@ -421,12 +421,12 @@ function zoom(e) {
             if (scaleBy > scaleMax) {
                 //el.parent.el = el.parent.el.parentNode;
                 //r = -1;
-                //console.info('Zoomr :: ','going beyond~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+('Zoomr :: ','going beyond~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
             }
         }
    
         if (scaleBy < scaleMin) {
-            console.info('Zoomr :: ','scaleBy < scaleMin so not scalling. scaleBy = ' + scaleBy);
+('Zoomr :: ','scaleBy < scaleMin so not scalling. scaleBy = ' + scaleBy);
             myServices.as.showAlertNotification(self.aData.resourceURI.asciiSpec + 'icon.png', 'DblTabZoom - Failed Zoom', 'scaleBy < scaleMin so not scalling. scaleBy = ' + scaleMin);
             return;
         }
@@ -437,15 +437,15 @@ function zoom(e) {
 
 //consider zooming parent if target == parent. then on second click zoom target
     if (cScale == 1) {
-        console.info('Zoomr :: ','nothing is zoomed so zoom parent');
+('Zoomr :: ','nothing is zoomed so zoom parent');
         zEl = 'parent';
         gEl = 'target';
     } else if (cScale != 1) {
-        console.info('Zoomr :: ','parent is zoomed so zoomout');
+('Zoomr :: ','parent is zoomed so zoomout');
         zEl = 'doc';
         gEl = 'target';
     } else {
-        console.info('Zoomr :: ','zoom parent');       
+('Zoomr :: ','zoom parent');       
         zEl = 'parent';
         gEl = 'target';
     }
@@ -457,7 +457,7 @@ function zoom(e) {
    
 
     if (scaleBy == 1 && zEl == 'parent') {
-        console.info('Zoomr :: ','parent is is inital goal of zoom however its zoom is 1 so zooming target - DISCONTNUED');
+('Zoomr :: ','parent is is inital goal of zoom however its zoom is 1 so zooming target - DISCONTNUED');
         /*
         zEl = 'target';
         gEl = 'target';
@@ -467,7 +467,7 @@ function zoom(e) {
     }
    
     if (scaleBy != 1 && scaleBy == cScale) {
-        console.info('Zoomr :: ','new scaleBy is equal to currently scaled, so no need to zoom, so zoomeout');
+('Zoomr :: ','new scaleBy is equal to currently scaled, so no need to zoom, so zoomeout');
         zEl = 'doc';
         gEl = 'target';
         scaleBy = 1;
@@ -501,7 +501,7 @@ function zoom(e) {
     */
     win.scrollTo(scrollToX, scrollToY);
    
-    console.info('Zoomr :: ',str.join('\n'));
+('Zoomr :: ',str.join('\n'));
    
     if (scaleBy == 1) {
         myServices.as.showAlertNotification(self.aData.resourceURI.asciiSpec + 'icon.png', 'DblTabZoom - Zoomed Out', 'Content zoomed back to 1');
