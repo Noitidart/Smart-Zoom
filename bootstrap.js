@@ -10,15 +10,14 @@ var myServices = {};
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 XPCOMUtils.defineLazyGetter(myServices, 'as', function(){ return Cc["@mozilla.org/alerts-service;1"].getService(Ci.nsIAlertsService) });
-
-const console = Services.appShell.hiddenDOMWindow.console;
+Cu.import('resource://gre/modules/devtools/Console.jsm');
 
 var lastOutlined = null; //holds el
 var timeout = null;
 var timeoutWin;
 var trigger = 0;
 
-var outlineHelper = function(e) {
+function outlineHelper(e) {
 
     if (!e.shiftKey || !e.ctrlKey) {
         return;
@@ -130,19 +129,47 @@ console.info('Zoomr :: ','doing box');
 }
 
 var added = false;
-var keyDowned = function(e) {
+function keyDowned(e) {
     if (added) { return }
+	if (timeout) {
+	   console.info('Zoomr :: ','keydowned before timeout fired - clearing it');
+	   var win = e.originalTarget.ownerDocument.defaultView;
+	   timeoutWin.clearTimeout(timeout);
+	   timeout = null;
+	   win.removeEventListener('mousemove', moved, true);
+	   win.removeEventListener('dragstart', dragstarted,true);
+   }
     if (e.shiftKey && e.ctrlKey) {
         added = true;
-        gBrowser.addEventListener('mouseover',outlineHelper,true);
+		var DOMWindow = e.target.ownerDocument.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+															.getInterface(Ci.nsIWebNavigation)
+															.QueryInterface(Ci.nsIDocShellTreeItem)
+															.rootTreeItem
+															.QueryInterface(Ci.nsIInterfaceRequestor)
+															.getInterface(Ci.nsIDOMWindow);
+        DOMWindow.gBrowser.addEventListener('mouseover',outlineHelper,true);
         console.info('Zoomr :: ','added');
         //use ctypes to get coords and then elem from point and then outlineHelper that
     }
 }
-var keyUpped = function(e) {
+function keyUpped(e) {
+	if (timeout) {
+	   console.info('Zoomr :: ','keyupped before timeout fired - clearing it');
+	   var win = e.originalTarget.ownerDocument.defaultView;
+	   timeoutWin.clearTimeout(timeout);
+	   timeout = null;
+	   win.removeEventListener('mousemove', moved, true);
+	   win.removeEventListener('dragstart', dragstarted,true);
+   }
     if (e.shiftKey || e.ctrlKey) {
         console.info('Zoomr :: ','exit as shift or ctrl upped');
-        gBrowser.removeEventListener('mouseover', outlineHelper, true);
+		var DOMWindow = e.target.ownerDocument.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+															.getInterface(Ci.nsIWebNavigation)
+															.QueryInterface(Ci.nsIDocShellTreeItem)
+															.rootTreeItem
+															.QueryInterface(Ci.nsIInterfaceRequestor)
+															.getInterface(Ci.nsIDOMWindow);
+        DOMWindow.gBrowser.removeEventListener('mouseover', outlineHelper, true);
         added = false;
    
         var win = e.originalTarget.ownerDocument.defaultView.top;
@@ -156,7 +183,7 @@ var keyUpped = function(e) {
     }
 }
 
-var moved = function(e) {
+function moved(e) {
     var cX = e.clientX;
     var cY = e.clientY;
     var diffX = Math.abs(initX - cX);
@@ -174,7 +201,7 @@ var moved = function(e) {
    //moved mouse so they are doing selecting/highlighting so cancel listening to the hold
 }
 
-var dragstarted = function(e) {
+function dragstarted(e) {
    console.info('Zoomr :: ','dragStarted - clearing listening for hold');
    var win = e.originalTarget.ownerDocument.defaultView;
    win.removeEventListener('dragstarted', dragstarted, true);
@@ -191,9 +218,49 @@ var initY = 0; //on down records init coords
 var initScrollX = 0; //pre zoom scroll bars
 var initScrollY = 0; //pre zoom scroll bars
 var moveTolerance = 3; //on move if movement exceeds this px, uses init coords, then clear listen for hold
-var downed = function(e) {
-    if (e.button != trigger) { return;}
+
+function downed(e) {
+    if (!timeout && e.button != trigger) { return;}
+    if (timeout && e.button != trigger) {
+		if (timeout) { //this is redundant if but i copied pasted from other preventers in like wheeled etc this so leaving for consistency
+		   console.info('Zoomr :: ','mousedowned another button before timeout fired - clearing it');
+		   var win = e.originalTarget.ownerDocument.defaultView;
+		   timeoutWin.clearTimeout(timeout);
+		   timeout = null;
+		   win.removeEventListener('mousemove', moved, true);
+		   win.removeEventListener('dragstart', dragstarted,true);
+	   }
+		return;
+	}
+	
     zoomed = false;
+	console.info('Zoomr :: ', 'downed e = ', e);
+	Cu.import('chrome://cdumpjsm/content/cDump.jsm');
+	
+	//cDump(e.originalTarget,{t:'e.originalTarget downed',inbg:true});
+	//start - test to see if user is on scroll bar or find bar
+	if (Object.prototype.toString.call(e.view) == '[object ChromeWindow]') {
+		//this works for findbar
+		if (e.view.gBrowser) {
+			console.warn('Zoomr :: ','e.view is chromeWindow and this chromeWindow has a gBrowser SO RETURN','e.view = ',e.view);
+			return;
+		}
+	}
+	/*
+	//this doesnt work for anything
+	try {
+		var ownerDocument = e.originalTarget.ownerDocument;
+	} catch (ex) {
+		console.info('Zoomr :: ', 'exception when trying to get owner document of originaltarget meaning this is likely a scrollbar so return','ex=',ex);
+		return;
+	}
+	*/
+	if (e.originalTarget.namespaceURI == 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul') {
+		//this works for scrollbar
+		console.warn('Zoomr :: ','e.originalTarget.namespaceURI is xul so return', 'e.originalTarget=', e.originalTarget);
+		return;
+	}
+	//end - test to see if user is on scroll bar
     if (!e.shiftKey || !e.ctrlKey) {
         //do hold down thing
         var win = e.originalTarget.ownerDocument.defaultView;
@@ -213,12 +280,16 @@ var downed = function(e) {
     e.preventDefault();
     e.returnValue = false;
 }
-var upped = function(e) {
+
+function upped(e) {
     if (e.button != trigger) { return; }
-    if (e.clientX == 0 && e.clientY == 0) {
+	if (e.relatedTarget && e.relatedTarget.nodeName == 'zoomr') {
+	//if (e.relatedTarget == 'Zoomr::SynthMouseUp') {
+    //if (e.clientX == 0 && e.clientY == 0) {
          //if x y 0 0 its synth, most likely
         //dont prev it
-        console.info('Zoomr :: ','UnPrevd - suspecting Synth Up');
+        //console.info('Zoomr :: ','UnPrevd - suspecting Synth Up');
+        console.info('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
     } else if (zoomed) {
         console.info('Zoomr :: ','up prevd');
         e.stopPropagation();
@@ -238,18 +309,32 @@ var upped = function(e) {
     }
 }
 
-var clicked = function(e) {
+function clicked(e) {
     if (e.button != trigger) { return; }
-    if (e.clientX == 0 && e.clientY == 0) {
+	if (e.relatedTarget && e.relatedTarget.nodeName == 'zoomr') {
+	//if (e.relatedTarget == 'Zoomr::SynthMouseUp') {
+    //if (e.clientX == 0 && e.clientY == 0) {
          //if x y 0 0 its synth, most likely
         //dont prev it
-        console.info('Zoomr :: ','UnPrevd - suspecting Synth Click');
+        //console.info('Zoomr :: ','UnPrevd - suspecting Synth Up');
+        console.info('Zoomr :: ','UnPrevd - its our  SynthMouseUp');
     } else if (zoomed) {
         console.info('Zoomr :: ','click prevd');
         e.stopPropagation();
         e.preventDefault();
         e.returnValue = false;
     }
+}
+
+function wheeled(e) {
+	if (timeout) {
+	   console.info('Zoomr :: ','wheeled before timeout fired - clearing it');
+	   var win = e.originalTarget.ownerDocument.defaultView;
+	   timeoutWin.clearTimeout(timeout);
+	   timeout = null;
+	   win.removeEventListener('mousemove', moved, true);
+	   win.removeEventListener('dragstart', dragstarted,true);
+   }
 }
 
 var scaleMax = 2;
@@ -263,7 +348,29 @@ function zoom(e) {
     if (timeout)    {
        var utils = timeoutWin.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils);
       console.info('Zoomr :: ','sending synthetic mouseup');
-      utils.sendMouseEvent('mouseup',0,0,trigger,1,0);
+      //utils.sendMouseEvent('mouseup',0,0,trigger,1,0);
+		var mouseEvent = timeoutWin.document.createEvent('MouseEvents')
+		var mouseEventParam = {
+			type: 'mouseup',
+			canBubble: true ,
+			cancelable: true,
+			view: timeoutWin,
+			detail: trigger,
+			screenX: e.screenX,
+			screenY: e.screenY,
+			clientX: e.clientX,
+			clientY: e.clientY,
+			ctrlKey: false,
+			altKey: false,
+			shiftKey: false,
+			metaKey: false,
+			button: trigger,
+			relatedTarget: timeoutWin.document.createElement('zoomr'),
+		}
+		
+		mouseEvent.initMouseEvent(mouseEventParam.type, mouseEventParam.canBubble, mouseEventParam.cancelable, mouseEventParam.view, mouseEventParam.detail, mouseEventParam.screenX, mouseEventParam.screenY, mouseEventParam.clientX, mouseEventParam.clientY, mouseEventParam.ctrlKey, mouseEventParam.altKey, mouseEventParam.shiftKey, mouseEventParam.metaKey, mouseEventParam.button, mouseEventParam.relatedTarget);
+		e.target.dispatchEvent(mouseEvent)
+	  
    }
    timeout = null;
    
@@ -450,12 +557,15 @@ var windowListener = {
 			aDOMWindow.gBrowser.addEventListener('mousedown',downed,true);
 			aDOMWindow.gBrowser.addEventListener('mouseup',upped,true);
 			aDOMWindow.gBrowser.addEventListener('click',clicked,true);
+			aDOMWindow.gBrowser.addEventListener('DOMMouseScroll',wheeled,true);
+			
 		} else {
 			aDOMWindow.addEventListener('keydown',keyDowned,true);
 			aDOMWindow.addEventListener('keyup',keyUpped,true);
 			aDOMWindow.addEventListener('mousedown',downed,true);
 			aDOMWindow.addEventListener('mouseup',upped,true);
-			aDOMWindow.addEventListener('click',clicked,true);		
+			aDOMWindow.addEventListener('click',clicked,true);
+			aDOMWindow.addEventListener('DOMMouseScroll',wheeled,true);
 		}
 	},
 	unloadFromWindow: function (aDOMWindow, aXULWindow) {
@@ -468,12 +578,14 @@ var windowListener = {
 			aDOMWindow.gBrowser.removeEventListener('mousedown',downed,true);
 			aDOMWindow.gBrowser.removeEventListener('mouseup',upped,true);
 			aDOMWindow.gBrowser.removeEventListener('click',clicked,true);
+			aDOMWindow.gBrowser.removeEventListener('DOMMouseScroll',wheeled,true);
 		} else {
 			aDOMWindow.removeEventListener('keydown',keyDowned,true);
 			aDOMWindow.removeEventListener('keyup',keyUpped,true);
 			aDOMWindow.removeEventListener('mousedown',downed,true);
 			aDOMWindow.removeEventListener('mouseup',upped,true);
-			aDOMWindow.removeEventListener('click',clicked,true);		
+			aDOMWindow.removeEventListener('click',clicked,true);
+			aDOMWindow.removeEventListener('DOMMouseScroll',wheeled,true);
 		}
 	}
 };
