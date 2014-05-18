@@ -789,13 +789,17 @@ function shutdown(aData, aReason) {
 	
 	//start pref stuff more
 	myPrefListener.unregister();
-	if ([ADDON_UNINSTALL].indexOf(aReason) > -1) {
-		console.log('deleting branch of: ' + prefPrefix);
-		Services.prefs.deleteBranch(prefPrefix);
-	}
 	//end pref stuff more
 }
 
-function install() {}
+function install(aData, aReason) {
+	//must have arguments of aData and aReason otherwise the uninstall function doesn't trigger
+}
 
-function uninstall() {}
+function uninstall(aData, aReason) {
+	console.info('UNINSTALLING ZOOMR reason = ', aReason);
+	if (aReason == ADDON_UNINSTALL) { //have to put this here because uninstall fires on upgrade/downgrade too
+		console.log('deleting branch of: ' + prefPrefix);
+		Services.prefs.deleteBranch(prefPrefix);
+	}
+}
