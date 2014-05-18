@@ -9,7 +9,7 @@
 		<em:type>2</em:type>
 		<em:bootstrap>true</em:bootstrap>
 		<em:unpack>false</em:unpack>
-
+		
 		<!-- Firefox -->
 		<em:targetApplication>
 		  <Description>
@@ -18,12 +18,24 @@
 			<em:maxVersion>27.*</em:maxVersion>
 		  </Description>
 		</em:targetApplication>
+		
+	   <!-- SeaMonkey -->
+	   <em:targetApplication>
+		  <Description>
+			<em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
+			<em:minVersion>2.0</em:minVersion>
+			<em:maxVersion>2.28</em:maxVersion>
+		  </Description>
+	   </em:targetApplication>
 
 		<!-- Front End MetaData -->
 		<em:name>Zoomr</em:name>
 		<em:description>Simulates the smart zoom of mobile devices and tablets on desktop. Instead of double tapping though, click and hold to zoom on a paragraph, image, etc.</em:description>
 		<em:creator>Noitidart</em:creator>
-		<em:creator>jmiller29 for Idea</em:creator>
-		<em:creator>Isaac Grant for Icon</em:creator>
+		<em:contributor>jmiller29 for Idea</em:contributor>
+		<em:contributor>Isaac Grant for Icon</em:contributor>
+		<em:contributor>therube for SeaMonkey Compatability</em:contributor>
+		
+		<em:optionsType>2</em:optionsType>
 	  </Description>
 	</RDF>

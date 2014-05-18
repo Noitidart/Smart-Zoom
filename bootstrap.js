@@ -1,14 +1,16 @@
 const {interfaces: Ci, utils: Cu, classes: Cc} = Components;
 const self = {
 	name: 'Zoomr',
-	aData: 0,
+	id: 'Zoomr@jetpack', //because pref listener inits before startup and in startup is where aData.self.id becomes available
+	aData: 0
 };
 
 var myServices = {};
 Cu.import('resource://gre/modules/Services.jsm');
+Cu.import('resource://gre/modules/devtools/Console.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 XPCOMUtils.defineLazyGetter(myServices, 'as', function () {
-	return Cc["@mozilla.org/alerts-service;1"].getService(Ci.nsIAlertsService)
+	return Cc['@mozilla.org/alerts-service;1'].getService(Ci.nsIAlertsService)
 });
 
 var lastOutlined = null; //holds el
@@ -152,7 +154,7 @@ function keyDowned(e) {
 		if (DOMWindow.gBrowser) {
 			DOMWindow.gBrowser.addEventListener('mouseover', outlineHelper, true);
 		} else {
-			DOMWindow.gBrowser.addEventListener('mouseover', outlineHelper, true);
+			DOMWindow.addEventListener('mouseover', outlineHelper, true);
 		}
 
 		//use ctypes to get coords and then elem from point and then outlineHelper that
@@ -179,7 +181,7 @@ function keyUpped(e) {
 		if (DOMWindow.gBrowser) {
 			DOMWindow.gBrowser.removeEventListener('mouseover', outlineHelper, true);
 		} else {
-			DOMWindow.gBrowser.removeEventListener('mouseover', outlineHelper, true);
+			DOMWindow.removeEventListener('mouseover', outlineHelper, true);
 		}
 		added = false;
 
@@ -223,7 +225,6 @@ function dragstarted(e) {
 }
 
 var zoomed = false;
-var holdTime = 300;
 var initX = 0; //on down records init coords
 var initY = 0; //on down records init coords
 var initScrollX = 0; //pre zoom scroll bars
@@ -280,7 +281,7 @@ function downed(e) {
 		timeoutWin = win;
 		timeout = win.setTimeout(function () {
 			zoom(e)
-		}, holdTime);
+		}, prefs.holdTime.value);
 		win.addEventListener('mousemove', moved, true);
 		win.addEventListener('dragstart', dragstarted, true);
 		//end do hold down thing
@@ -539,7 +540,7 @@ var windowListener = {
 	onWindowTitleChange: function (aXULWindow, aNewTitle) {},
 	register: function () {
 		// Load into any existing windows
-		let XULWindows = Services.wm.getXULWindowEnumerator(null);
+		let XULWindows = Services.wm.getXULWindowEnumerator('navigator:browser');
 		while (XULWindows.hasMoreElements()) {
 			let aXULWindow = XULWindows.getNext();
 			let aDOMWindow = aXULWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
@@ -550,7 +551,7 @@ var windowListener = {
 	},
 	unregister: function () {
 		// Unload from any existing windows
-		let XULWindows = Services.wm.getXULWindowEnumerator(null);
+		let XULWindows = Services.wm.getXULWindowEnumerator('navigator:browser');
 		while (XULWindows.hasMoreElements()) {
 			let aXULWindow = XULWindows.getNext();
 			let aDOMWindow = aXULWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
@@ -564,7 +565,7 @@ var windowListener = {
 		if (!aDOMWindow) {
 			return;
 		}
-		if (aDOMWindow.gBrowser) {
+		if (aDOMWindow.gBrowser && aDOMWindow.gBrowser.tabContainer) {
 			aDOMWindow.gBrowser.addEventListener('keydown', keyDowned, true);
 			aDOMWindow.gBrowser.addEventListener('keyup', keyUpped, true);
 			aDOMWindow.gBrowser.addEventListener('mousedown', downed, true);
@@ -573,6 +574,7 @@ var windowListener = {
 			aDOMWindow.gBrowser.addEventListener('DOMMouseScroll', wheeled, true);
 
 		} else {
+			return;
 			aDOMWindow.addEventListener('keydown', keyDowned, true);
 			aDOMWindow.addEventListener('keyup', keyUpped, true);
 			aDOMWindow.addEventListener('mousedown', downed, true);
@@ -585,7 +587,7 @@ var windowListener = {
 		if (!aDOMWindow) {
 			return;
 		}
-		if (aDOMWindow.gBrowser) {
+		if (aDOMWindow.gBrowser && aDOMWindow.gBrowser.tabContainer) {
 			aDOMWindow.gBrowser.removeEventListener('keydown', keyDowned, true);
 			aDOMWindow.gBrowser.removeEventListener('keyup', keyUpped, true);
 			aDOMWindow.gBrowser.removeEventListener('mousedown', downed, true);
@@ -593,6 +595,7 @@ var windowListener = {
 			aDOMWindow.gBrowser.removeEventListener('click', clicked, true);
 			aDOMWindow.gBrowser.removeEventListener('DOMMouseScroll', wheeled, true);
 		} else {
+			return;
 			aDOMWindow.removeEventListener('keydown', keyDowned, true);
 			aDOMWindow.removeEventListener('keyup', keyUpped, true);
 			aDOMWindow.removeEventListener('mousedown', downed, true);
@@ -603,14 +606,194 @@ var windowListener = {
 	}
 };
 /*end - windowlistener*/
+
+//start pref stuff
+const prefPrefix = 'extensions.' + self.id + '.'; //cannot put this in startup and cannot use self.aData.id
+var prefs = { //each key here must match the exact name the pref is saved in the about:config database (without the prefix)
+    holdTime: {
+		default: 300,
+		value: null,
+		type: 'Int'
+		//json: null, //if want to use json type must be string
+		//onChange: function(oldVal, newVal, refObj) { } //on change means on change of the object prefs.blah.value within. NOT on change of the pref in about:config. likewise onPreChange means before chanigng the perfs.blah.value, this is because if users changes pref from about:config, newVal is always obtained by doing a getIntVal etc //refObj holds
+	}
+}
+/**
+ * if want to change value of preference dont do prefs.holdTime.value = blah, instead must do `prefs.holdTime.setval(500)`
+ * because this will then properly set the pref on the branch then it will do the onChange properly with oldVal being correct
+ * NOTE: this fucntion prefSetval is not to be used directly, its only here as a contructor
+ */
+function prefSetval(name) {
+	return function(updateTo) {
+		console.log('in prefSetval');
+		console.info('this = ', this);
+		if ('json' in this) {
+			//updateTo must be an object
+			if (Object.prototype.toString.call(updateTo) != '[object Object]') {
+				console.warn('EXCEPTION: prefs[name] is json but updateTo supplied is not an object');
+				return;
+			}
+			
+			var stringify = JSON.stringify(updateTo); //uneval(updateTo);
+			myPrefListener._branch['set' + this.type + 'Pref'](name, stringify);
+			//prefs[name].value = {};
+			//for (var p in updateTo) {
+			//	prefs[name].value[p] = updateTo[p];
+			//}
+		} else {
+			//prefs[name].value = updateTo;
+			myPrefListener._branch['set' + this.type + 'Pref'](name, updateTo);
+		}
+	};
+}
+///pref listener generic stuff NO NEED TO EDIT
+/**
+ * @constructor
+ *
+ * @param {string} branch_name
+ * @param {Function} callback must have the following arguments:
+ *   branch, pref_leaf_name
+ */
+function PrefListener(branch_name, callback) {
+  // Keeping a reference to the observed preference branch or it will get garbage collected.
+	this._branch = Services.prefs.getBranch(branch_name);
+	this._defaultBranch = Services.prefs.getDefaultBranch(branch_name);
+	this._branch.QueryInterface(Ci.nsIPrefBranch2);
+	this._callback = callback;
+}
+
+PrefListener.prototype.observe = function(subject, topic, data) {
+	console.log('incomcing PrefListener observe', 'topic=', topic, 'data=', data, 'subject=', subject);
+	if (topic == 'nsPref:changed')
+		this._callback(this._branch, data);
+};
+
+/**
+ * @param {boolean=} trigger if true triggers the registered function
+ *   on registration, that is, when this method is called.
+ */
+PrefListener.prototype.register = function(setDefaults, trigger) {
+	//adds the observer to all prefs and gives it the seval function
+	
+	for (var p in prefs) {
+		prefs[p].setval = new prefSetval(p);
+	}
+	
+	console.log('added setval');
+	if (setDefaults) {
+		this.setDefaults();
+		console.log('finished set defaults');
+	}
+	
+	//should add observer after setting defaults otherwise it triggers the callbacks
+	this._branch.addObserver('', this, false);
+	console.log('added observer');
+	
+	if (trigger) {
+		console.log('trigger callbacks');
+		this.forceCallbacks();
+		console.log('finished all callbacks');
+	}
+};
+
+PrefListener.prototype.forceCallbacks = function() {
+	console.log('forcing pref callbacks');
+    let that = this;
+    this._branch.getChildList('', {}).
+      forEach(function (pref_leaf_name)
+        { that._callback(that._branch, pref_leaf_name); });
+};
+
+PrefListener.prototype.setDefaults = function() {
+	//sets defaults on the prefs in prefs obj
+	console.log('doing setDefaults');
+	for (var p in prefs) {
+		console.log('will now set default on ', p);
+		this._defaultBranch['set' + prefs[p].type + 'Pref'](p, prefs[p].default);
+		console.log('fined setting default on ', p);
+	}
+	console.log('set defaults done');
+};
+
+PrefListener.prototype.unregister = function() {
+  if (this._branch)
+    this._branch.removeObserver('', this);
+};
+
+var myPrefListener = new PrefListener(prefPrefix, function (branch, name) {
+	//extensions.myextension[name] was changed
+	console.log('callback start for pref: ', name);
+	if (!(name in prefs)) {
+		console.warn('name is not in prefs so return name = ', name);
+		//added this because apparently some pref named prefPreix + '.sdk.console.logLevel' gets created when testing with builder
+		//ALSO gets here if say upgraded, and in this version this pref is not used (same with downgraded)
+		return;
+	}
+
+	var refObj = {name: name}; //passed to onPreChange and onChange
+	var oldVal = 'json' in prefs[name] ? prefs[name].json : prefs[name].value;
+	try {
+		var newVal = myPrefListener._branch['get' + prefs[name].type + 'Pref'](name);
+	} catch (ex) {
+		console.warn('exception when getting newVal (likely the pref was removed): ' + ex);
+		var newVal = null; //note: if ex thrown then pref was removed (likely probably)
+	}
+	console.log('oldVal == ', oldVal);
+	console.log('newVal == ', newVal);
+	prefs[name].value = newVal === null ? prefs[name].default : newVal;
+
+	if ('json' in prefs[name]) {
+		refObj.oldValStr = oldVal;
+		oldVal = JSON.parse(oldVal); //function(){ return eval('(' + oldVal + ')') }();
+
+		refObj.newValStr = prefs[name].value;
+		prefs[name].json = prefs[name].value;
+		prefs[name].value =  JSON.parse(prefs[name].value); //function(){ return eval('(' + prefs[name].value + ')') }();
+	}
+
+	if (prefs[name].onChange) {
+		prefs[name].onChange(oldVal, prefs[name].value, refObj);
+	}
+	console.log('myPrefCallback done');
+});
+////end pref listener stuff
+//end pref stuff
+
 function startup(aData, aReason) {
+	console.log('startup reason = ', aReason);
+	
 	self.aData = aData; //must go first, because functions in loadIntoWindow use self.aData
+	console.log('myPrefListener=', myPrefListener);
+	
+	//start pref stuff more
+	console.log('aReason=', aReason);
+	//must forceCallbacks on startup, as the callbacks will read the inital prefs
+	if ([ADDON_INSTALL,ADDON_UPGRADE,ADDON_DOWNGRADE].indexOf(aReason) > -1) {
+		console.log('setting defaults logical if');
+		myPrefListener.register(true, true); //true so it triggers the callback on registration, which sets value to current value //myPrefListener.setDefaults(); //in jetpack they get initialized somehow on install so no need for this	//on startup prefs must be initialized first thing, otherwise there is a chance that an added event listener gets called before settings are initalized
+		//setDefaults safe to run after install too though because it wont change the current pref value if it is changed from the default.
+		//good idea to always call setDefaults before register, especially if true for tirgger as if the prefs are not there the value in we are forcing it to use default value which is fine, but you know what i mean its not how i designed it, use of default is a backup plan for when something happens (like maybe pref removed)
+	} else {
+		myPrefListener.register(false, true); //true so it triggers the callback on registration, which sets value to current value
+	}
+	//end pref stuff more
+	console.log('pre register');
 	windowListener.register();
+	console.log('post register');
 }
 
 function shutdown(aData, aReason) {
+	console.log('shutdown reason = ', aReason);
 	if (aReason == APP_SHUTDOWN) return;
 	windowListener.unregister();
+	
+	//start pref stuff more
+	myPrefListener.unregister();
+	if ([ADDON_UNINSTALL].indexOf(aReason) > -1) {
+		console.log('deleting branch of: ' + prefPrefix);
+		Services.prefs.deleteBranch(prefPrefix);
+	}
+	//end pref stuff more
 }
 
 function install() {}
