@@ -142,9 +142,9 @@ function shutdown(aData, aReason) {
 // start - addon functions
 function fetchPrefs() {
 	return {
-		margin: 10,
-		hold_time: 300,
-		distance: 5 // pixels allowed to move in any dir
+		zoommargin: 10,
+		holdtime: 300,
+		holddist: 5 // pixels allowed to move in any dir
 	};
 }
 
@@ -272,4 +272,139 @@ function formatStringFromName(aKey, aLocalizedPackageName, aReplacements) {
 	}
 
 	return cLocalizedStr;
+}
+
+// filestore stuff for mainthread
+var gFilestore;
+var gFilestoreDefaultGetters = [ // after default is set, it runs all these functions
+];
+var gFilestoreDefault = {
+	prefs: {
+		holdtime: 300,
+		holddist: 3,
+		zoommargin: 0
+	}
+};
+function readFilestore() {
+	// reads from disk, if not found, it uses the default filestore
+	if (!gFilestore) {
+		try {
+			gFilestore = JSON.parse(OS.File.read(core.addon.path.filestore, {encoding:'utf-8'}));
+		} catch (OSFileError) {
+			if (OSFileError.becauseNoSuchFile) {
+				gFilestore = gFilestoreDefault ? gFilestoreDefault : {};
+				// run default gFilestoreDefaultGetters
+				for (var getter of gFilestoreDefaultGetters) {
+					getter();
+				}
+			}
+			else { console.error('OSFileError:', OSFileError); throw new Error('error when trying to ready hydrant:', OSFileError); }
+		}
+	}
+
+	return gFilestore;
+}
+
+function updateFilestoreEntry(aArg, aComm) {
+	// updates in memory (global), does not write to disk
+	// if gFilestore not yet read, it will readFilestore first
+
+	var { mainkey, value, key, verb } = aArg;
+	// verb
+		// "filter" - `value` must be a function to determine what to remove
+
+	// key is optional. if key is not set, then gFilestore[mainkey] is set to value
+	// if key is set, then gFilestore[mainkey][key] is set to value
+	// if verb is set
+
+	// REQUIRED: mainkey, value
+
+	if (!gFilestore) {
+		readFilestore();
+	}
+
+	var dirty = true;
+	switch (verb) {
+		case 'push':
+				// acts on arrays only
+				if (key) {
+					gFilestore[mainkey][key].push(value);
+				} else {
+					gFilestore[mainkey].push(value);
+				}
+			break;
+		case 'filter':
+				// acts on arrays only
+				// removes entires that match verb_do
+				var verb_do = value;
+				dirty = false;
+				var arr;
+				if (key) {
+					arr = gFilestore[mainkey][key];
+				} else {
+					arr = gFilestore[mainkey];
+				}
+				var lm1 = arr.length - 1;
+				for (var i=lm1; i>-1; i--) {
+					var el = arr[i];
+					if (verb_do(el)) {
+						arr.splice(i, 1);
+						dirty = true;
+					}
+				}
+			break;
+		default:
+			if (key) {
+				gFilestore[mainkey][key] = value;
+			} else {
+				gFilestore[mainkey] = value;
+			}
+	}
+
+	if (dirty) {
+		gFilestore.dirty = dirty; // meaning not yet written to disk
+
+		if (gWriteFilestoreTimeout !== null) {
+			clearTimeout(gWriteFilestoreTimeout);
+		}
+		gWriteFilestoreTimeout = setTimeout(writeFilestore, 10000);
+	}
+}
+
+function fetchFilestoreEntry(aArg) {
+	var { mainkey, key } = aArg;
+	// key is optional. if key is not set, then gFilestore[mainkey] is returned
+	// if key is set, then gFilestore[mainkey][key] is returned
+
+	// REQUIRED: mainkey
+
+	if (!gFilestore) {
+		readFilestore();
+	}
+
+	if (key) {
+		return gFilestore[mainkey][key];
+	} else {
+		return gFilestore[mainkey];
+	}
+}
+
+var gWriteFilestoreTimeout = null;
+function writeFilestore(aArg, aComm) {
+	// writes gFilestore to file (or if it is undefined, it writes gFilestoreDefault)
+	if (!gFilestore.dirty) {
+		console.warn('filestore is not dirty, so no need to write it');
+		return;
+	}
+	if (gWriteFilestoreTimeout !== null) {
+		clearTimeout(gWriteFilestoreTimeout);
+		gWriteFilestoreTimeout = null;
+	}
+	delete gFilestore.dirty;
+	try {
+		writeThenDir(core.addon.path.filestore, JSON.stringify(gFilestore || gFilestoreDefault), OS.Constants.Path.profileDir);
+	} catch(ex) {
+		gFilestore.dirty = true;
+		throw ex;
+	}
 }

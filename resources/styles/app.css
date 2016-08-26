@@ -10,3 +10,7 @@
 .pref-rows .row {
 	margin-bottom: 10px;
 }
+
+input[type=text] {
+	text-align: center;
+}

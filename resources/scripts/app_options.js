@@ -111,7 +111,8 @@ var Rows = React.createClass({
 		return React.createElement(ReactBootstrap.Grid, { className:'pref-rows' },
 			React.createElement(RowAutoUpdates),
 			React.createElement(RowHoldTime),
-			React.createElement(RowHoldDistance)
+			React.createElement(RowHoldDistance),
+			React.createElement(RowZoomMargin)
 		);
 	}
 });
@@ -142,6 +143,22 @@ var RowHoldTime = React.createClass({
 			),
 			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
 				formatStringFromNameCore('holdtime_desc', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
+				React.createElement(ReactBootstrap.FormControl, { type:'text' })
+			)
+		);
+	}
+});
+
+var RowZoomMargin = React.createClass({
+	render: function() {
+		return React.createElement(ReactBootstrap.Row, undefined,
+			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:3, xs:8 },
+				formatStringFromNameCore('zoommargin', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
+				formatStringFromNameCore('zoommargin_desc', 'main')
 			),
 			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
 				React.createElement(ReactBootstrap.FormControl, { type:'text' })

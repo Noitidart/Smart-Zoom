@@ -73,7 +73,7 @@ function onMouseDown(e) {
 		console.log('set timer');
 		mx = e.clientX;
 		my = e.clientY;
-		held_timeout = setTimeout(onHeld.bind(null, e), gPrefs.hold_time);
+		held_timeout = setTimeout(onHeld.bind(null, e), gPrefs.holdtime);
 		document.addEventListener('mousemove', onMouseMove, true);
 	}
 }
@@ -97,12 +97,12 @@ function onHeld(e) {
 	document.removeEventListener('mousemove', onMouseMove, true);
 	held = true;
 	console.log('will zoom now, zoom:', zoom);
-	zoom.to({ element: e.target });
+	zoom.to({ element: e.target, padding:gPrefs.zoommargin });
 	console.log('did zoom');
 }
 
 function onMouseMove(e) {
-	if (Math.abs(e.clientX) - mx > gPrefs.distance || Math.abs(e.clientY - my) > gPrefs.distance) {
+	if (Math.abs(e.clientX) - mx > gPrefs.holddist || Math.abs(e.clientY - my) > gPrefs.holddist) {
 		document.removeEventListener('mousemove', onMouseMove, true);
 		console.error('canceling hold');
 		clearTimeout(held_timeout);
