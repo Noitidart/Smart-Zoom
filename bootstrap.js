@@ -314,7 +314,7 @@ var gFilestoreDefaultGetters = []; // after default is set, it runs all these fu
 var gFilestoreDefault = {
 	prefs: {
 		holdtime: 300,
-		holddist: 3,
+		holddist: 1,
 		zoommargin: 0
 	}
 };

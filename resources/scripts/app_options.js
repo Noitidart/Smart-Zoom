@@ -155,10 +155,10 @@ var RowPref = React.createClass({
 			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:3, xs:8 },
 				formatStringFromNameCore(name, 'main')
 			),
-			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
+			React.createElement(ReactBootstrap.Col, { lg:8, md:8, sm:7, xsHidden:true },
 				formatStringFromNameCore(name + '_desc', 'main', locale_replace)
 			),
-			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
+			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:2, xs:4 },
 				React.createElement(type_to_rcls[type], type_to_props[type])
 			)
 		);
@@ -177,7 +177,7 @@ var ButtonGroup = React.createClass({
 		var buttons_sorted = buttons.map(el=>Object.assign({}, el, {locale:formatStringFromNameCore(el.name, 'main')})).sort((a,b)=>a.locale.localeCompare(b.locale));
 
 		return React.createElement(ReactBootstrap.ButtonGroup, { justified:true },
-			buttons_sorted.map( el => React.createElement(ReactBootstrap.Button, { active:value===el.value, onClick:setValue.bind(null, el.value) }, el.locale) )
+			buttons_sorted.map( el => React.createElement(ReactBootstrap.Button, { href:'#', active:value===el.value, onClick:setValue.bind(null, el.value) }, el.locale) )
 		)
 	}
 });
