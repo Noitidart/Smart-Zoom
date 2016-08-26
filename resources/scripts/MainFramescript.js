@@ -16,7 +16,10 @@ var gWinComm; // need to set this. instead var because otherwise Comm/Comm.js ca
 var gMM = this;
 var gAppAboutFactory;
 
+var gSandbox;
+
 var MATCH_APP = 1;
+var MATCH_NONAPP = 2;
 
 var gLastReloadDueToError = 0;
 
@@ -33,6 +36,8 @@ var pageLoader = {
 		var href_lower = aLocation.href.toLowerCase();
 		if (href_lower.startsWith('about:zoomr')) {
 			return MATCH_APP;
+		} else {
+			return MATCH_NONAPP;
 		}
 	},
 	ready: function(aContentWindow) {
@@ -43,31 +48,38 @@ var pageLoader = {
 		// console.log('READYYYYYYYYYYYYYYYYYYYYYY');
 		var contentWindow = aContentWindow;
 		// console.log('PAGE READYYYYYY:', contentWindow.location.href);
-		var match = pageLoader.matches(contentWindow.location.href, contentWindow.location);
+
+		console.error('here, href:', contentWindow.location.href);
+		// var match = pageLoader.matches(contentWindow.location.href, contentWindow.location);
 		switch (pageLoader.matches(contentWindow.location.href, contentWindow.location)) {
 			case MATCH_APP:
 					gCommScope.gWinComm = gWinComm = new gCommScope.Comm.server.content(contentWindow);
 				break;
 		}
+		console.error('here2, href:', contentWindow.location.href);
 
-		// inject zoom.js to all pages
+		// all pages should get MainContentscript.js
 		var principal = contentWindow.document.nodePrincipal; // contentWindow.location.origin (this is undefined for about: pages) // docShell.chromeEventHandler.contentPrincipal (chromeEventHandler no longer has contentPrincipal)
-		// // console.log('contentWindow.document.nodePrincipal', contentWindow.document.nodePrincipal);
+		console.log('contentWindow.document.nodePrincipal', contentWindow.document.nodePrincipal);
 		// // console.error('principal:', principal);
-		var sandbox = Cu.Sandbox(principal, {
+		gSandbox = Cu.Sandbox(principal, {
 			sandboxPrototype: contentWindow,
 			wantXrays: true, // only set this to false if you need direct access to the page's javascript. true provides a safer, isolated context.
 			sameZoneAs: contentWindow,
 			wantComponents: false
 		});
-		// Services.scriptloader.loadSubScript(core.addon.path.scripts + 'MainContentscript.js?' + core.addon.cache_key, sandbox, 'UTF-8');
+		// Services.scriptloader.loadSubScript(core.addon.path.scripts + 'comm/Comm.js?' + core.addon.cache_key, gSandbox, 'UTF-8');
+		Services.scriptloader.loadSubScript(core.addon.path.scripts + '3rd/zoom.js?' + core.addon.cache_key, gSandbox, 'UTF-8');
+		Services.scriptloader.loadSubScript(core.addon.path.scripts + 'MainContentscript.js?' + core.addon.cache_key, gSandbox, 'UTF-8');
 
-		Services.scriptloader.loadSubScript(core.addon.path.scripts + '3rd/zoom.js?' + core.addon.cache_key, null, 'UTF-8');
-
-		// inject prefs for content script
-		console.log('calling for prefs');
+		console.error('fetching prefs for page:', contentWindow.location.href);
 		callInBootstrap('fetchPrefs', null, function(aPrefs) {
-			Services.scriptloader.loadSubScript('data:application/javascript,var gPrefs = ' + JSON.stringify(aPrefs), null, 'UTF-8');
+			console.error('got prefs for page:', contentWindow.location.href);
+			contentWindow.postMessage({
+				topic: 'Zoomr-contentscript',
+				method: 'initPrefs',
+				arg: aPrefs
+			}, '*');
 		});
 
 	},
@@ -88,9 +100,9 @@ var pageLoader = {
 	error: function(aContentWindow, aDocURI) {
 		// triggered when page fails to load due to error
 		console.warn('hostname page ready, but an error page loaded, so like offline or something, aHref:', aContentWindow.location.href, 'aDocURI:', aDocURI);
-		if (aContentWindow.location.href.startsWith('about:nativeshot') && Date.now() - gLastReloadDueToError > 100) {
+		if (aContentWindow.location.href.startsWith('about:zoomr') && Date.now() - gLastReloadDueToError > 100) {
 			gLastReloadDueToError = Date.now();
-			console.warn('it is about:nativeshot, this hpapens if the connection to load about:nativeshot was established before the about page was setup. which happens on gBrowser.loadOneTab(about:nativeshot). so load it again, href:', aContentWindow.location.href);
+			console.warn('it is about:zoomr, this hpapens if the connection to load about:zoomr was established before the about page was setup. which happens on gBrowser.loadOneTab(about:zoomr). so load it again, href:', aContentWindow.location.href);
 			aContentWindow.location.href = aContentWindow.location.href;
 		}
 	},
@@ -260,7 +272,7 @@ function init() {
 
 		var webnav = content.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIWebNavigation);
 		var docuri = webnav.document.documentURI;
-		console.error('testing matches', content.window.location.href, 'docuri:', docuri);
+		console.log('testing matches', content.window.location.href, 'docuri:', docuri);
 		var href_lower = content.window.location.href.toLowerCase();
 		switch (pageLoader.matches(href_lower, content.window.location)) {
 			case MATCH_APP:
@@ -268,12 +280,12 @@ function init() {
 					console.error('MATCHING, RELOADING NATIVESHOT PAGE');
 					content.window.location.reload(); //href = content.window.location.href.replace(/https\:\/\/screencastify\/?/i, 'about:screencastify'); // cannot use .reload() as the webNav.document.documentURI is now https://screencastify/
 				break;
-			// case MATCH_TWITTER:
-			// 		// for non-about pages, i dont reload, i just initiate the ready of pageLoader
-			// 		if (content.document.readyState == 'interactive' || content.document.readyState == 'complete') {
-			// 			pageLoader.onPageReady({target:content.document}); // IGNORE_LOAD is true, so no need to worry about triggering load
-			// 		}
-			// 	break;
+			case MATCH_NONAPP:
+					// for non-about pages, i dont reload, i just initiate the ready of pageLoader
+					if (content.document.readyState == 'interactive' || content.document.readyState == 'complete') {
+						pageLoader.onPageReady({target:content.document}); // IGNORE_LOAD is true, so no need to worry about triggering load
+					}
+				break;
 		}
 	});
 }
@@ -295,6 +307,14 @@ gCommScope.uninit = function() { // link4757484773732
 
 	if (gWinComm) { // this only should happen if tab is not closing
 		callInContent('uninit');
+	}
+	content.postMessage({
+		topic: 'Zoomr-contentscript',
+		method: 'uninit'
+	}, '*');
+	if (gSandbox) {
+		Cu.nukeSandbox(gSandbox);
+		gSandbox = null;
 	}
 
 	gCommScope.Comm.server.unregAll('content');
