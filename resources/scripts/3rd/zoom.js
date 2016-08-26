@@ -24,19 +24,12 @@ var zoom = (function(){
 	var callbackTimeout = -1;
 
 	// Check for transform support so that we can fallback otherwise
-	var supportsTransforms = 	'WebkitTransform' in document.body.style ||
-								'MozTransform' in document.body.style ||
-								'msTransform' in document.body.style ||
-								'OTransform' in document.body.style ||
-								'transform' in document.body.style;
+	var supportsTransforms = 	true;
 
+	var docel = document.body || document.documentElement;
 	if( supportsTransforms ) {
 		// The easing that will be applied when we zoom in/out
-		document.body.style.transition = 'transform '+ TRANSITION_DURATION +'ms ease';
-		document.body.style.OTransition = '-o-transform '+ TRANSITION_DURATION +'ms ease';
-		document.body.style.msTransition = '-ms-transform '+ TRANSITION_DURATION +'ms ease';
-		document.body.style.MozTransition = '-moz-transform '+ TRANSITION_DURATION +'ms ease';
-		document.body.style.WebkitTransition = '-webkit-transform '+ TRANSITION_DURATION +'ms ease';
+		docel.style.transition = 'transform '+ TRANSITION_DURATION +'ms ease';
 	}
 
 	// Zoom out if the user hits escape
@@ -76,48 +69,36 @@ var zoom = (function(){
 		if( supportsTransforms ) {
 			// Reset
 			if( scale === 1 ) {
-				document.body.style.transform = '';
-				document.body.style.OTransform = '';
-				document.body.style.msTransform = '';
-				document.body.style.MozTransform = '';
-				document.body.style.WebkitTransform = '';
+				docel.style.transform = '';
 			}
 			// Scale
 			else {
 				var origin = scrollOffset.x +'px '+ scrollOffset.y +'px',
 					transform = 'translate('+ -rect.x +'px,'+ -rect.y +'px) scale('+ scale +')';
 
-				document.body.style.transformOrigin = origin;
-				document.body.style.OTransformOrigin = origin;
-				document.body.style.msTransformOrigin = origin;
-				document.body.style.MozTransformOrigin = origin;
-				document.body.style.WebkitTransformOrigin = origin;
+				docel.style.transformOrigin = origin;
 
-				document.body.style.transform = transform;
-				document.body.style.OTransform = transform;
-				document.body.style.msTransform = transform;
-				document.body.style.MozTransform = transform;
-				document.body.style.WebkitTransform = transform;
+				docel.style.transform = transform;
 			}
 		}
 		else {
 			// Reset
 			if( scale === 1 ) {
-				document.body.style.position = '';
-				document.body.style.left = '';
-				document.body.style.top = '';
-				document.body.style.width = '';
-				document.body.style.height = '';
-				document.body.style.zoom = '';
+				docel.style.position = '';
+				docel.style.left = '';
+				docel.style.top = '';
+				docel.style.width = '';
+				docel.style.height = '';
+				docel.style.zoom = '';
 			}
 			// Scale
 			else {
-				document.body.style.position = 'relative';
-				document.body.style.left = ( - ( scrollOffset.x + rect.x ) / scale ) + 'px';
-				document.body.style.top = ( - ( scrollOffset.y + rect.y ) / scale ) + 'px';
-				document.body.style.width = ( scale * 100 ) + '%';
-				document.body.style.height = ( scale * 100 ) + '%';
-				document.body.style.zoom = scale;
+				docel.style.position = 'relative';
+				docel.style.left = ( - ( scrollOffset.x + rect.x ) / scale ) + 'px';
+				docel.style.top = ( - ( scrollOffset.y + rect.y ) / scale ) + 'px';
+				docel.style.width = ( scale * 100 ) + '%';
+				docel.style.height = ( scale * 100 ) + '%';
+				docel.style.zoom = scale;
 			}
 		}
 

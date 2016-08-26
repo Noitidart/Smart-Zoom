@@ -142,7 +142,8 @@ function shutdown(aData, aReason) {
 function fetchPrefs() {
 	return {
 		margin: 10,
-		hold_time: 300
+		hold_time: 300,
+		distance: 5 // pixels allowed to move in any dir
 	};
 }
 

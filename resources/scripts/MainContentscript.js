@@ -66,11 +66,15 @@ function initPrefs(aPrefs) {
 
 var held_timeout;
 var held = false;
+var mx, my = 0; // to figure out if they moved too much
 function onMouseDown(e) {
 	held = false;
 	if (e.button === 0) {
 		console.log('set timer');
+		mx = e.clientX;
+		my = e.clientY;
 		held_timeout = setTimeout(onHeld.bind(null, e), gPrefs.hold_time);
+		document.addEventListener('mousemove', onMouseMove, false);
 	}
 }
 
@@ -88,13 +92,21 @@ function onClick(e) {
 }
 
 function onHeld(e) {
-	stopEvent(e);
+	stopEvent(e); // i dont think this is needed, pretty sure it does nothing as the mouse down already happened
+	document.removeEventListener('mousemove', onMouseMove, false);
 	held = true;
 	console.log('will zoom now, zoom:', zoom);
 	zoom.to({ element: e.target });
 	console.log('did zoom');
 }
 
+function onMouseMove(e) {
+	if (Math.abs(e.clientX) - mx > gPrefs.distance || Math.abs(e.clientY - my) > gPrefs.distance) {
+		document.removeEventListener('mousemove', onMouseMove, false);
+		console.error('canceling hold');
+		clearTimeout(held_timeout);
+	}
+}
 function stopEvent(e) {
 	e.stopPropagation();
 	e.preventDefault();
