@@ -4,17 +4,6 @@ Cu.import('resource://gre/modules/AddonManager.jsm');
 Cu.import('resource://gre/modules/osfile.jsm');
 Cu.import('resource://gre/modules/Services.jsm');
 
-const COMMONJS_URI = 'resource://gre/modules/commonjs';
-const { require } = Cu.import(COMMONJS_URI + '/toolkit/require.js', {});
-var CLIPBOARD = require('sdk/clipboard');
-
-var BEAUTIFY = {};
-(function() {
-	var { require } = Cu.import('resource://devtools/shared/Loader.jsm', {});
-	var { jsBeautify } = require('devtools/shared/jsbeautify/src/beautify-js');
-	BEAUTIFY.js = jsBeautify;
-}());
-
 // Lazy Imports
 
 // Globals

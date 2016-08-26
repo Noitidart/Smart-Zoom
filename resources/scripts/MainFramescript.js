@@ -122,7 +122,6 @@ var pageLoader = {
 	// end - devuser editable
 	// start - BOILERLATE - DO NOT EDIT
 	register: function() {
-		// DO NOT EDIT - boilerplate
 		addEventListener('DOMContentLoaded', pageLoader.onPageReady, false);
 		if (!pageLoader.IGNORE_CREATED) {
 			addEventListener('DOMWindowCreated', pageLoader.onContentCreated, false);
@@ -135,7 +134,6 @@ var pageLoader = {
 		}
 	},
 	unregister: function() {
-		// DO NOT EDIT - boilerplate
 		removeEventListener('DOMContentLoaded', pageLoader.onPageReady, false);
 		if (!pageLoader.IGNORE_UNLOAD) {
 			removeEventListener('unload', pageLoader.onPageUnload, false);
@@ -168,7 +166,6 @@ var pageLoader = {
 	},
 	onPageReady: function(e) {
 		// DO NOT EDIT
-		// boilerpate triggered on DOMContentLoaded
 		// frames are skipped if IGNORE_FRAMES is true
 		// console.error('onPageReady tripped!');
 
@@ -210,13 +207,11 @@ var pageLoader = {
 	},
 	onPageLoad: function(e) {
 		// DO NOT EDIT
-		// boilerplate triggered on load if IGNORE_LOAD is false
 		var contentWindow = e.target.defaultView;
 		pageLoader.load(contentWindow);
 	},
 	onPageLoadNonmatch: function(e) {
 		// DO NOT EDIT
-		// boilerplate triggered on load if IGNORE_LOAD is false
 		var contentWindow = e.target.defaultView;
 		contentWindow.removeEventListener('load', pageLoader.onPageLoadNonmatch, false);
 		pageLoader.loadNonmatch(contentWindow);
