@@ -7,15 +7,15 @@
 // 	callInBootstrap('fetchPrefs', undefined, function(aArg, aComm) {
 // 		core = aArg;
 //
-// 		window.addEventListener('unload', unload, false);
+// 		window.addEventListener('unload', unload, true);
 //
 // 	});
 // }
 //
 // function uninit() {
-// 	// triggered by uninit of framescript - if i want to do something on unload of page i should create function unload() and addEventListener('unload', unload, false)
+// 	// triggered by uninit of framescript - if i want to do something on unload of page i should create function unload() and addEventListener('unload', unload, true)
 // 	alert('uninit');
-// 	window.removeEventListener('unload', unload, false);
+// 	window.removeEventListener('unload', unload, true);
 // 	if (gCover) { gCover.parentNode.removeChild(gCover) }
 // }
 //
@@ -30,13 +30,13 @@ var gPrefs;
 var gSandbox = this; // Sandbox, init: init(), uninit: uninit(), unload: unload(), csWinMsgListener: csWinMsgListener(), initPrefs: initPrefs(), window: Window → zoomr, document: HTMLDocument → zoomr, location: Location → zoomr, 63 more… }
 
 function init() {
-	window.addEventListener('message', csWinMsgListener, false);
+	window.addEventListener('message', csWinMsgListener, true);
 }
 
 function uninit() {
-	document.removeEventListener('mousedown', onMouseDown, false);
-	document.removeEventListener('mouseup', onMouseUp, false);
-	document.removeEventListener('click', onClick, false);
+	document.removeEventListener('mousedown', onMouseDown, true);
+	document.removeEventListener('mouseup', onMouseUp, true);
+	document.removeEventListener('click', onClick, true);
 	console.log('finished unint of href:', window.location.href);
 }
 
@@ -54,13 +54,13 @@ function csWinMsgListener(e) {
 function initPrefs(aPrefs) {
 	gPrefs = aPrefs;
 	// alert(JSON.stringify(gPrefs));
-	document.removeEventListener('mousedown', onMouseDown, false);
-	document.removeEventListener('mouseup', onMouseUp, false);
-	document.removeEventListener('click', onClick, false);
+	document.removeEventListener('mousedown', onMouseDown, true);
+	document.removeEventListener('mouseup', onMouseUp, true);
+	document.removeEventListener('click', onClick, true);
 
-	document.addEventListener('mousedown', onMouseDown, false);
-	document.addEventListener('mouseup', onMouseUp, false);
-	document.addEventListener('click', onClick, false);
+	document.addEventListener('mousedown', onMouseDown, true);
+	document.addEventListener('mouseup', onMouseUp, true);
+	document.addEventListener('click', onClick, true);
 	console.log('finished init of href:', window.location.href);
 }
 
@@ -74,12 +74,13 @@ function onMouseDown(e) {
 		mx = e.clientX;
 		my = e.clientY;
 		held_timeout = setTimeout(onHeld.bind(null, e), gPrefs.hold_time);
-		document.addEventListener('mousemove', onMouseMove, false);
+		document.addEventListener('mousemove', onMouseMove, true);
 	}
 }
 
 function onMouseUp(e) {
 	clearTimeout(held_timeout);
+	document.removeEventListener('mousemove', onMouseMove, true);
 	if (held) {
 		stopEvent(e);
 	}
@@ -93,7 +94,7 @@ function onClick(e) {
 
 function onHeld(e) {
 	stopEvent(e); // i dont think this is needed, pretty sure it does nothing as the mouse down already happened
-	document.removeEventListener('mousemove', onMouseMove, false);
+	document.removeEventListener('mousemove', onMouseMove, true);
 	held = true;
 	console.log('will zoom now, zoom:', zoom);
 	zoom.to({ element: e.target });
@@ -102,7 +103,7 @@ function onHeld(e) {
 
 function onMouseMove(e) {
 	if (Math.abs(e.clientX) - mx > gPrefs.distance || Math.abs(e.clientY - my) > gPrefs.distance) {
-		document.removeEventListener('mousemove', onMouseMove, false);
+		document.removeEventListener('mousemove', onMouseMove, true);
 		console.error('canceling hold');
 		clearTimeout(held_timeout);
 	}

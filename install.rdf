@@ -10,7 +10,7 @@
 		<em:bootstrap>true</em:bootstrap>
 		<em:multiprocessCompatible>true</em:multiprocessCompatible>
 		<em:optionsType>3</em:optionsType>
-		<em:optionsURL>about:zoomr?options</em:optionsURL>
+		<em:optionsURL>about:zoomr</em:optionsURL>
 		<em:iconURL>chrome://zoomr/content/resources/images/icon48.png</em:iconURL>
 		<em:icon64URL>chrome://zoomr/content/resources/images/icon64.png</em:icon64URL>
 
