@@ -97,7 +97,7 @@ function onHeld(e) {
 	document.removeEventListener('mousemove', onMouseMove, true);
 	held = true;
 	console.log('will zoom now, zoom:', zoom);
-	zoom.to({ element: e.target, padding:gPrefs.zoommargin });
+	zoom.to({ element:e.target, padding:gPrefs.zoommargin });
 	console.log('did zoom');
 }
 

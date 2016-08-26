@@ -11,8 +11,6 @@
 		<em:multiprocessCompatible>true</em:multiprocessCompatible>
 		<em:optionsType>3</em:optionsType>
 		<em:optionsURL>about:smartzoom</em:optionsURL>
-		<em:iconURL>chrome://smart-zoom/content/resources/images/icon48.png</em:iconURL>
-		<em:icon64URL>chrome://smart-zoom/content/resources/images/icon64.png</em:icon64URL>
 
 		<!-- Firefox -->
 		<em:targetApplication>

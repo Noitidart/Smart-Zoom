@@ -62,7 +62,6 @@ var gAndroidMenuIds = [];
 const NS_HTML = 'http://www.w3.org/1999/xhtml';
 const NS_XUL = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul';
 
-
 function install() {}
 function uninstall(aData, aReason) {
     if (aReason == ADDON_UNINSTALL) {
@@ -121,6 +120,14 @@ function shutdown(aData, aReason) {
 
     Comm.server.unregAll('framescript');
 
+	writeFilestore();
+
+	for (var timerid in gTempTimers) {
+		var timer = gTempTimers[timerid];
+		timer.cancel();
+		delete gTempTimers[timerid];
+	}
+
     // // desktop_android:insert_gui
     // if (core.os.name != 'android') {
 	// 	CustomizableUI.destroyWidget('cui_' + core.addon.path.name);
@@ -141,11 +148,7 @@ function shutdown(aData, aReason) {
 
 // start - addon functions
 function fetchPrefs() {
-	return {
-		zoommargin: 10,
-		holdtime: 300,
-		holddist: 5 // pixels allowed to move in any dir
-	};
+	return fetchFilestoreEntry({mainkey:'prefs'});
 }
 
 function fetchCore(aArg) {
@@ -163,7 +166,12 @@ function fetchCore(aArg) {
 
 		if (hydrant_ex_instructions.filestore_entries) {
 			for (var filestore_entry of hydrant_ex_instructions.filestore_entries) {
-				rez.hydrant_ex[filestore_entry] = {}; // fetchFilestoreEntry({ mainkey:filestore_entry });
+				let deferred_fetchfileentry = new Deferred();
+				promiseallarr.push(deferred_fetchfileentry.promise);
+				fetchFilestoreEntry({mainkey:filestore_entry}).then(val=>{
+					rez.hydrant_ex[filestore_entry] = val;
+					deferred_fetchfileentry.resolve();
+				});
 			}
 		}
 
@@ -276,8 +284,7 @@ function formatStringFromName(aKey, aLocalizedPackageName, aReplacements) {
 
 // filestore stuff for mainthread
 var gFilestore;
-var gFilestoreDefaultGetters = [ // after default is set, it runs all these functions
-];
+var gFilestoreDefaultGetters = []; // after default is set, it runs all these functions
 var gFilestoreDefault = {
 	prefs: {
 		holdtime: 300,
@@ -287,25 +294,33 @@ var gFilestoreDefault = {
 };
 function readFilestore() {
 	// reads from disk, if not found, it uses the default filestore
+	var deferred = new Deferred();
+
 	if (!gFilestore) {
-		try {
-			gFilestore = JSON.parse(OS.File.read(core.addon.path.filestore, {encoding:'utf-8'}));
-		} catch (OSFileError) {
-			if (OSFileError.becauseNoSuchFile) {
+		OS.File.read(core.addon.path.filestore, {encoding:'utf-8'}).then(
+			txt => {
+				gFilestore = JSON.parse(txt);
+				deferred.resolve();
+			},
+			OSFileError => {
 				gFilestore = gFilestoreDefault ? gFilestoreDefault : {};
 				// run default gFilestoreDefaultGetters
 				for (var getter of gFilestoreDefaultGetters) {
 					getter();
 				}
+				deferred.resolve();
 			}
-			else { console.error('OSFileError:', OSFileError); throw new Error('error when trying to ready hydrant:', OSFileError); }
-		}
+		);
+	} else {
+		deferred.resolve();
 	}
 
-	return gFilestore;
+	return deferred.promise;
 }
 
 function updateFilestoreEntry(aArg, aComm) {
+	// does not return/resolve to anything, even on error
+
 	// updates in memory (global), does not write to disk
 	// if gFilestore not yet read, it will readFilestore first
 
@@ -319,56 +334,52 @@ function updateFilestoreEntry(aArg, aComm) {
 
 	// REQUIRED: mainkey, value
 
-	if (!gFilestore) {
-		readFilestore();
-	}
-
-	var dirty = true;
-	switch (verb) {
-		case 'push':
-				// acts on arrays only
-				if (key) {
-					gFilestore[mainkey][key].push(value);
-				} else {
-					gFilestore[mainkey].push(value);
-				}
-			break;
-		case 'filter':
-				// acts on arrays only
-				// removes entires that match verb_do
-				var verb_do = value;
-				dirty = false;
-				var arr;
-				if (key) {
-					arr = gFilestore[mainkey][key];
-				} else {
-					arr = gFilestore[mainkey];
-				}
-				var lm1 = arr.length - 1;
-				for (var i=lm1; i>-1; i--) {
-					var el = arr[i];
-					if (verb_do(el)) {
-						arr.splice(i, 1);
-						dirty = true;
+	Promise.all([!gFilestore ? readFilestore() : undefined]).then( () => {
+		var dirty = true;
+		switch (verb) {
+			case 'push':
+					// acts on arrays only
+					if (key) {
+						gFilestore[mainkey][key].push(value);
+					} else {
+						gFilestore[mainkey].push(value);
 					}
+				break;
+			case 'filter':
+					// acts on arrays only
+					// removes entires that match verb_do
+					var verb_do = value;
+					dirty = false;
+					var arr;
+					if (key) {
+						arr = gFilestore[mainkey][key];
+					} else {
+						arr = gFilestore[mainkey];
+					}
+					var lm1 = arr.length - 1;
+					for (var i=lm1; i>-1; i--) {
+						var el = arr[i];
+						if (verb_do(el)) {
+							arr.splice(i, 1);
+							dirty = true;
+						}
+					}
+				break;
+			default:
+				if (key) {
+					gFilestore[mainkey][key] = value;
+				} else {
+					gFilestore[mainkey] = value;
 				}
-			break;
-		default:
-			if (key) {
-				gFilestore[mainkey][key] = value;
-			} else {
-				gFilestore[mainkey] = value;
-			}
-	}
-
-	if (dirty) {
-		gFilestore.dirty = dirty; // meaning not yet written to disk
-
-		if (gWriteFilestoreTimeout !== null) {
-			clearTimeout(gWriteFilestoreTimeout);
 		}
-		gWriteFilestoreTimeout = setTimeout(writeFilestore, 10000);
-	}
+
+		if (dirty) {
+			gFilestore.dirty = dirty; // meaning not yet written to disk
+
+			gWriteFilestoreTimeout.cancel();
+			xpcomSetTimeout(gWriteFilestoreTimeout, 10000, writeFilestore)
+		}
+	});
 }
 
 function fetchFilestoreEntry(aArg) {
@@ -378,33 +389,84 @@ function fetchFilestoreEntry(aArg) {
 
 	// REQUIRED: mainkey
 
-	if (!gFilestore) {
-		readFilestore();
-	}
+	var deferred = new Deferred();
 
-	if (key) {
-		return gFilestore[mainkey][key];
-	} else {
-		return gFilestore[mainkey];
-	}
+	Promise.all([!gFilestore ? readFilestore() : undefined]).then(() => {
+		if (key) {
+			deferred.resolve(gFilestore[mainkey][key]);
+		} else {
+			deferred.resolve(gFilestore[mainkey]);
+		}
+	});
+
+	return deferred.promise;
 }
 
-var gWriteFilestoreTimeout = null;
+var gWriteFilestoreTimeout = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
 function writeFilestore(aArg, aComm) {
 	// writes gFilestore to file (or if it is undefined, it writes gFilestoreDefault)
 	if (!gFilestore.dirty) {
 		console.warn('filestore is not dirty, so no need to write it');
 		return;
 	}
-	if (gWriteFilestoreTimeout !== null) {
-		clearTimeout(gWriteFilestoreTimeout);
-		gWriteFilestoreTimeout = null;
-	}
+
+	gWriteFilestoreTimeout.cancel();
 	delete gFilestore.dirty;
-	try {
-		writeThenDir(core.addon.path.filestore, JSON.stringify(gFilestore || gFilestoreDefault), OS.Constants.Path.profileDir);
-	} catch(ex) {
-		gFilestore.dirty = true;
-		throw ex;
-	}
+
+	writeThenDir(core.addon.path.filestore, JSON.stringify(gFilestore || gFilestoreDefault), OS.Constants.Path.profileDir).then(ok=>{
+		if (!ok) {
+			gFilestore.dirty = true;
+		}
+	});
+}
+
+function writeThenDir(aPlatPath, aContents, aDirFrom, aOptions={}) {
+	// tries to writeAtomic
+	// if it fails due to dirs not existing, it creates the dir
+	// then writes again
+	// if fail again for whatever reason it throws
+	var deferred = new Deferred();
+
+	var cOptionsDefaults = {
+		encoding: 'utf-8',
+		noOverwrite: false
+		// tmpPath: aPlatPath + '.tmp'
+	};
+
+	aOptions = Object.assign(cOptionsDefaults, aOptions);
+
+	OS.File.writeAtomic(aPlatPath, aContents, aOptions).then(
+		()=>deferred.resolve(true),
+		OSFileError=>{
+			if (OSFileError.becauseNoSuchFile) { // this happens when directories dont exist to it
+				OS.File.makeDir(OS.Path.dirname(aPlatPath), {from:aDirFrom}).then(
+					()=>OS.File.writeAtomic(aPlatPath, aContents, aOptions).then(()=>deferred.resolve(true),()=>deferred.resolve(false))
+				);
+			} else {
+				deferred.resolve(false);
+			}
+		}
+	)
+	return deferred.promise;
+}
+
+var gTempTimers = {}; // hold temporary timers, when first arg is not set for xpcomSetTimeout
+function xpcomSetTimeout(aNsiTimer, aDelayTimerMS, aTimerCallback) {
+    var timer;
+    if (!aNsiTimer) {
+        var timerid = Date.now();
+        gTempTimers[timerid] = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
+        timer = gTempTimers[timerid];
+    } else {
+        timer = aNsiTimer;
+    }
+
+	timer.initWithCallback({
+		notify: function() {
+			aTimerCallback();
+            if (!aNsiTimer) {
+                delete gTempTimers[timerid];
+            }
+		}
+	}, aDelayTimerMS, Ci.nsITimer.TYPE_ONE_SHOT);
 }
