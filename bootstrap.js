@@ -20,21 +20,21 @@ var BEAUTIFY = {};
 // Globals
 var core = {
 	addon: {
-		name: 'Zoomr',
-		id: 'Zoomr@jetpack',
+		name: 'Smart Zoom',
+		id: 'Smart-Zoom@jetpack',
 		version: null, // populated by `startup`
 		path: {
-			name: 'zoomr',
+			name: 'smart-zoom',
 			//
-			content: 'chrome://zoomr/content/',
-			locale: 'chrome://zoomr/locale/',
+			content: 'chrome://smart-zoom/content/',
+			locale: 'chrome://smart-zoom/locale/',
 			//
-			resources: 'chrome://zoomr/content/resources/',
-			images: 'chrome://zoomr/content/resources/images/',
-			scripts: 'chrome://zoomr/content/resources/scripts/',
-			styles: 'chrome://zoomr/content/resources/styles/',
-			fonts: 'chrome://zoomr/content/resources/styles/fonts/',
-			pages: 'chrome://zoomr/content/resources/pages/'
+			resources: 'chrome://smart-zoom/content/resources/',
+			images: 'chrome://smart-zoom/content/resources/images/',
+			scripts: 'chrome://smart-zoom/content/resources/scripts/',
+			styles: 'chrome://smart-zoom/content/resources/styles/',
+			fonts: 'chrome://smart-zoom/content/resources/styles/fonts/',
+			pages: 'chrome://smart-zoom/content/resources/pages/'
 			// below are added by worker
 			// storage: OS.Path.join(OS.Constants.Path.profileDir, 'jetpack', core.addon.id, 'simple-storage')
 			// filestore:

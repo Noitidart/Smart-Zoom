@@ -1,2 +1,2 @@
-content zoomr ./ contentaccessible=true
-locale zoomr en-US locale/en-US/
+content smart-zoom ./ contentaccessible=true
+locale smart-zoom en-US locale/en-US/

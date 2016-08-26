@@ -27,7 +27,7 @@
 // alert('injected href: ' + window.location.href + ' readyState: ' + document.readyState);
 
 var gPrefs;
-var gSandbox = this; // Sandbox, init: init(), uninit: uninit(), unload: unload(), csWinMsgListener: csWinMsgListener(), initPrefs: initPrefs(), window: Window → zoomr, document: HTMLDocument → zoomr, location: Location → zoomr, 63 more… }
+var gSandbox = this; // Sandbox, init: init(), uninit: uninit(), unload: unload(), csWinMsgListener: csWinMsgListener(), initPrefs: initPrefs(), window: Window → smart-zoom, document: HTMLDocument → smart-zoom, location: Location → smart-zoom, 63 more… }
 
 function init() {
 	window.addEventListener('message', csWinMsgListener, true);
@@ -46,7 +46,7 @@ function unload() {
 
 function csWinMsgListener(e) {
 	var data = e.data;
-	if (typeof(data) == 'object' && data.topic == 'Zoomr-contentscript') {
+	if (typeof(data) == 'object' && data.topic == 'Smart Zoom-contentscript') {
 		gSandbox[data.method](data.arg);
 	}
 }

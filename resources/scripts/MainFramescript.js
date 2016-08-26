@@ -5,7 +5,7 @@ Cu.importGlobalProperties(['Blob', 'URL']);
 
 // CommAPI import and setup for framescript
 var gCommScope = {};
-Services.scriptloader.loadSubScript('chrome://zoomr/content/resources/scripts/comm/Comm.js', gCommScope);
+Services.scriptloader.loadSubScript('chrome://smart-zoom/content/resources/scripts/comm/Comm.js', gCommScope);
 var { callInBootstrap, callInMainworker, callInContent } = gCommScope.CommHelper.framescript;
 Object.assign(gCommScope, { callInBootstrap, callInMainworker, callInContent }); // Comm.js requires these be inside it as well
 
@@ -34,7 +34,7 @@ var pageLoader = {
 	matches: function(aHREF, aLocation) {
 		// do your tests on aHREF, which is aLocation.href.toLowerCase(), return true if it matches
 		var href_lower = aLocation.href.toLowerCase();
-		if (href_lower.startsWith('about:zoomr')) {
+		if (href_lower.startsWith('about:smartzoom')) {
 			return MATCH_APP;
 		} else {
 			return MATCH_NONAPP;
@@ -76,7 +76,7 @@ var pageLoader = {
 		callInBootstrap('fetchPrefs', null, function(aPrefs) {
 			console.error('got prefs for page:', contentWindow.location.href);
 			contentWindow.postMessage({
-				topic: 'Zoomr-contentscript',
+				topic: 'Smart Zoom-contentscript',
 				method: 'initPrefs',
 				arg: aPrefs
 			}, '*');
@@ -100,9 +100,9 @@ var pageLoader = {
 	error: function(aContentWindow, aDocURI) {
 		// triggered when page fails to load due to error
 		console.warn('hostname page ready, but an error page loaded, so like offline or something, aHref:', aContentWindow.location.href, 'aDocURI:', aDocURI);
-		if (aContentWindow.location.href.startsWith('about:zoomr') && Date.now() - gLastReloadDueToError > 100) {
+		if (aContentWindow.location.href.startsWith('about:smartzoom') && Date.now() - gLastReloadDueToError > 100) {
 			gLastReloadDueToError = Date.now();
-			console.warn('it is about:zoomr, this hpapens if the connection to load about:zoomr was established before the about page was setup. which happens on gBrowser.loadOneTab(about:zoomr). so load it again, href:', aContentWindow.location.href);
+			console.warn('it is about:smartzoom, this hpapens if the connection to load about:smartzoom was established before the about page was setup. which happens on gBrowser.loadOneTab(about:smartzoom). so load it again, href:', aContentWindow.location.href);
 			aContentWindow.location.href = aContentWindow.location.href;
 		}
 	},
@@ -243,15 +243,15 @@ var pageLoader = {
 function aboutRedirectorizer(aURI) {
 	// console.log('nativeshot redirectorizer, core.addon.path:', core.addon.path);
 	var uripath_lower = aURI.path.toLowerCase();
-	if (uripath_lower == 'zoomr') {
+	if (uripath_lower == 'smartzoom') {
 		return core.addon.path.pages + 'app_options.xhtml';
 	} else {
-		return 'data:text/plain,invalid zoomr page "' + uripath_lower + '"';
+		return 'data:text/plain,invalid smart-zoom page "' + uripath_lower + '"';
 	}
 }
 
 function init() {
-	gBsComm = new gCommScope.Comm.client.framescript('Zoomr@jetpack');
+	gBsComm = new gCommScope.Comm.client.framescript('Smart-Zoom@jetpack');
 	gCommScope.gBsComm = gBsComm;
 
 	console.error('INITING TAB');
@@ -266,7 +266,7 @@ function init() {
 		// progressListener.register();
 		//
 		try {
-			gAppAboutFactory = registerAbout('zoomr', 'zoomr options page', '{89db01a0-6b3c-11e6-bdf4-0800200c9a66}', aboutRedirectorizer);
+			gAppAboutFactory = registerAbout('smartzoom', 'smart-zoom options page', '{89db01a0-6b3c-11e6-bdf4-0800200c9a66}', aboutRedirectorizer);
 		} catch(ignore) {} // its non-e10s so it will throw saying already registered
 		// console.log('gAppAboutFactory:', gAppAboutFactory);
 
@@ -309,7 +309,7 @@ gCommScope.uninit = function() { // link4757484773732
 		callInContent('uninit');
 	}
 	content.postMessage({
-		topic: 'Zoomr-contentscript',
+		topic: 'Smart Zoom-contentscript',
 		method: 'uninit'
 	}, '*');
 	if (gSandbox) {

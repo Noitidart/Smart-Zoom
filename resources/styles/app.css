@@ -3,7 +3,7 @@
 }
 
 .navbar-brand {
-	background: transparent url("chrome://zoomr/content/resources/images/icon48.png") no-repeat left center;
+	background: transparent url("chrome://smart-zoom/content/resources/images/icon48.png") no-repeat left center;
 	text-indent: 48px;
 }
 
