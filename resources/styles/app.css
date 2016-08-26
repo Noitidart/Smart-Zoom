@@ -1,0 +1,12 @@
+#app_wrap {
+	padding: 5px 15px 15px;
+}
+
+.navbar-brand {
+	background: transparent url("chrome://zoomr/content/resources/images/icon48.png") no-repeat left center;
+	text-indent: 48px;
+}
+
+.pref-rows .row {
+	margin-bottom: 10px;
+}

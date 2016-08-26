@@ -2,13 +2,18 @@ hydrant_ex_instructions = { // stuff that shouldnt get written to hydrants entry
 	filestore_entries: ['prefs'],
 	addon_info: true
 };
+hydrant_ex = {
+	prefs: {},
+	addon_info: {}
+};
 
 initAppPage = function(aArg) {
 	// aArg is what is received by the call in `init`
 	// filter hydrant to just prefs i care about
 
 	gAppPageComponents = [
-		'hi'
+		React.createElement(Header),
+		React.createElement(Rows)
 	];
 
 }
@@ -84,30 +89,96 @@ shouldUpdateHydrantEx = function() {
 // REACT COMPONENTS - PRESENTATIONAL
 var Header = React.createClass({
 	render: function() {
-		var { text, logo_margin, logowidth, logoheight, logo='chrome://nativeshot/content/resources/images/icon32.png' } = this.props;
-
-		return React.createElement('header', { className:'type1' },
-			React.createElement('div', { className:'header-text' },
-				React.createElement('img', { className:'logo32', src:logo, width:logowidth, height:logoheight, style:(logo_margin ? {margin:logo_margin} : undefined) }),
-				text
+		return React.createElement(ReactBootstrap.Navbar, undefined,
+			React.createElement(ReactBootstrap.Navbar.Header, undefined,
+				React.createElement(ReactBootstrap.Navbar.Brand, undefined,
+					React.createElement('a', { href:'#' },
+						formatStringFromNameCore('addon_name', 'main')
+					)
+				)
+			),
+			React.createElement(ReactBootstrap.Navbar.Collapse, undefined,
+				React.createElement(ReactBootstrap.Navbar.Text, { pullRight:true },
+					formatStringFromNameCore('options', 'main')
+				)
 			)
 		);
-	},
+	}
+});
+
+var Rows = React.createClass({
+	render: function() {
+		return React.createElement(ReactBootstrap.Grid, { className:'pref-rows' },
+			React.createElement(RowAutoUpdates),
+			React.createElement(RowHoldTime),
+			React.createElement(RowHoldDistance)
+		);
+	}
+});
+
+var RowAutoUpdates = React.createClass({
+	render: function() {
+		return React.createElement(ReactBootstrap.Row, undefined,
+			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:3, xs:8 },
+				formatStringFromNameCore('autoupdate', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
+				formatStringFromNameCore('autoupdate_desc', 'main', [core.addon.version, formatTime(Date.now(), { time:false })])
+			),
+			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
+				React.createElement(ReactBootstrap.Button, { block:true },
+					formatStringFromNameCore('on', 'main')
+				)
+			)
+		);
+	}
+});
+
+var RowHoldTime = React.createClass({
+	render: function() {
+		return React.createElement(ReactBootstrap.Row, undefined,
+			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:3, xs:8 },
+				formatStringFromNameCore('holdtime', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
+				formatStringFromNameCore('holdtime_desc', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
+				React.createElement(ReactBootstrap.FormControl, { type:'text' })
+			)
+		);
+	}
+});
+
+var RowHoldDistance = React.createClass({
+	render: function() {
+		return React.createElement(ReactBootstrap.Row, undefined,
+			React.createElement(ReactBootstrap.Col, { lg:2, md:2, sm:3, xs:8 },
+				formatStringFromNameCore('holddist', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
+				formatStringFromNameCore('holddist_desc', 'main')
+			),
+			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
+				React.createElement(ReactBootstrap.FormControl, { type:'text' })
+			)
+		);
+	}
 });
 
 // REACT COMPONENTS - CONTAINER
-var BlockContainer = ReactRedux.connect(
-	function mapStateToProps(state, ownProps) {
-		return {
-
-		};
-	},
-	function mapDispatchToProps(dispatch, ownProps) {
-		return {
-
-		};
-	}
-)(Block);
+// var BlockContainer = ReactRedux.connect(
+// 	function mapStateToProps(state, ownProps) {
+// 		return {
+//
+// 		};
+// 	},
+// 	function mapDispatchToProps(dispatch, ownProps) {
+// 		return {
+//
+// 		};
+// 	}
+// )(Block);
 
 // ACTIONS
 const SET_PREF = 'SET_PREF';
@@ -139,6 +210,7 @@ function setMainKeys(obj_of_mainkeys) {
 
 // REDUCERS
 function prefs(state=hydrant_ex.prefs, action) {
+	console.log('in prefs hydrant_ex:', hydrant_ex);
 	switch (action.type) {
 		case SET_PREF:
 			var { pref, value } = action;

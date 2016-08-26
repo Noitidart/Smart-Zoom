@@ -4,6 +4,7 @@ var callInFramescript, callInMainworker, callInBootstrap;
 
 // set in app_*.js files
 var gAppPageComponents; // array of react elements
+var hydrant_ex; // undefined or an object
 var hydrant_ex_instructions; // object or undefined
 var gSupressUpdateHydrantExOnce = false; // boolean // supress the updating of the filestore due to hydrant update
 var shouldUpdateHydrantEx; // function
@@ -138,7 +139,7 @@ var App = React.createClass({
 			...gAppPageComponents
 		];
 
-		return React.createElement('div', { id:'app_wrap', className:'app-wrap container' },
+		return React.createElement('div', { id:'app_wrap', className:'app-wrap' },
 			app_components
 		);
 	}
@@ -178,3 +179,24 @@ function formatStringFromNameCore(aLocalizableStr, aLoalizedKeyInCoreAddonL10n, 
     return cLocalizedStr;
 }
 // end - common helper functions
+
+function formatTime(aDateOrTime, aOptions={}) {
+	// aMonthFormat - name, Mmm
+	var aDefaultOptions = {
+		month: 'name', // string;enum[name,Mmm] - format for month
+		time: true // bool - if should append time string
+	};
+	aOptions = Object.assign(aDefaultOptions, aOptions);
+
+	var aDate = typeof(aDateOrTime) == 'object' ? aDateOrTime : new Date(aDateOrTime);
+
+	var mon = formatStringFromNameCore('month.' + (aDate.getMonth()+1) + '.' + aOptions.month, 'dateFormat');
+	var yr = aDate.getFullYear();
+	var day = aDate.getDate();
+
+	var hr = aDate.getHours() > 12 ? aDate.getHours() - 12 : aDate.getHours();
+	var min = aDate.getMinutes() < 10 ? '0' + aDate.getMinutes() : aDate.getMinutes();
+	var meridiem = aDate.getHours() < 12 ? 'AM' : 'PM';
+
+	return mon + ' ' + day + ', ' + yr + (aOptions.time ? ' - ' + hr + ':' + min + ' ' + meridiem : '');
+}

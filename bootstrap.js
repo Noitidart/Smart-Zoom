@@ -79,6 +79,7 @@ function startup(aData, aReason) {
     Services.scriptloader.loadSubScript(core.addon.path.scripts + 'comm/Comm.js');
 
 	formatStringFromName('blah', 'main');
+	formatStringFromName('blah', 'chrome://global/locale/dateFormat.properties');
 	console.log('_cache_formatStringFromName_packages:', _cache_formatStringFromName_packages);
 	core.addon.l10n = _cache_formatStringFromName_packages;
 
@@ -147,9 +148,57 @@ function fetchPrefs() {
 	};
 }
 
-function fetchCore() {
-	return { core };
+function fetchCore(aArg) {
+	var { hydrant_ex_instructions, nocore } = aArg || {};
+
+	var rez = { };
+	var promiseallarr = [];
+
+	if (!nocore) {
+		rez.core = core;
+	}
+
+	if (hydrant_ex_instructions) {
+		rez.hydrant_ex = {};
+
+		if (hydrant_ex_instructions.filestore_entries) {
+			for (var filestore_entry of hydrant_ex_instructions.filestore_entries) {
+				rez.hydrant_ex[filestore_entry] = {}; // fetchFilestoreEntry({ mainkey:filestore_entry });
+			}
+		}
+
+		if (hydrant_ex_instructions.addon_info) {
+			let deferred_addoninfo = new Deferred();
+			promiseallarr.push(deferred_addoninfo.promise);
+			getAddonInfo().then(info => {
+				rez.hydrant_ex.addon_info = info
+				deferred_addoninfo.resolve();
+			});
+		}
+	}
+
+	var deferred = new Deferred();
+
+	Promise.all(promiseallarr).then(function(vals) {
+		deferred.resolve(rez);
+	});
+
+	return deferred.promise;
 }
+
+function getAddonInfo(aAddonId=core.addon.id) {
+	var deferredmain_getaddoninfo = new Deferred();
+	AddonManager.getAddonByID(aAddonId, addon =>
+		deferredmain_getaddoninfo.resolve({
+			applyBackgroundUpdates: parseInt(addon.applyBackgroundUpdates) === 1 ? (parseInt(AddonManager.autoUpdateDefault) ? 2 : 0) : parseInt(addon.applyBackgroundUpdates),
+			updateDate: addon.updateDate.getTime(),
+			version: addon.version
+		})
+	);
+
+	return deferredmain_getaddoninfo.promise;
+}
+
 // start - common helper functions
 function formatStringFromNameCore(aLocalizableStr, aLoalizedKeyInCoreAddonL10n, aReplacements) {
 	// 051916 update - made it core.addon.l10n based
