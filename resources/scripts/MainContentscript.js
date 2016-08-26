@@ -52,16 +52,16 @@ function csWinMsgListener(e) {
 }
 
 function initPrefs(aPrefs) {
-	gPrefs = aPrefs;
 	// alert(JSON.stringify(gPrefs));
-	document.removeEventListener('mousedown', onMouseDown, true);
-	document.removeEventListener('mouseup', onMouseUp, true);
-	document.removeEventListener('click', onClick, true);
 
-	document.addEventListener('mousedown', onMouseDown, true);
-	document.addEventListener('mouseup', onMouseUp, true);
-	document.addEventListener('click', onClick, true);
-	console.log('finished init of href:', window.location.href);
+	if (!gPrefs) {
+		document.addEventListener('mousedown', onMouseDown, true);
+		document.addEventListener('mouseup', onMouseUp, true);
+		document.addEventListener('click', onClick, true);
+	}
+
+	gPrefs = aPrefs;
+	console.log('updated prefs to:', JSON.stringify(gPrefs));
 }
 
 var held_timeout;

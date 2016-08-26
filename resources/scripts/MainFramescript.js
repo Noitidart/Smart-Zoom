@@ -327,6 +327,14 @@ gCommScope.uninit = function() { // link4757484773732
 	removeEventListener('unload', shutdown, true);
 }
 
+gCommScope.broadcastPrefs = function(aPrefs) {
+	content.postMessage({
+		topic: 'Smart Zoom-contentscript',
+		method: 'initPrefs',
+		arg: aPrefs
+	}, '*');
+}
+
 // start - common helper functions
 function formatStringFromNameCore(aLocalizableStr, aLoalizedKeyInCoreAddonL10n, aReplacements) {
 	// 051916 update - made it core.addon.l10n based

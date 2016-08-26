@@ -76,6 +76,7 @@ function startup(aData, aReason) {
 	core.addon.path.filestore = OS.Path.join(core.addon.path.storage, 'store.json');
 
     Services.scriptloader.loadSubScript(core.addon.path.scripts + 'comm/Comm.js');
+	({ callInMainworker, callInContentinframescript, callInFramescript } = CommHelper.bootstrap);
 
 	formatStringFromName('blah', 'main');
 	formatStringFromName('blah', 'chrome://global/locale/dateFormat.properties');
@@ -194,17 +195,42 @@ function fetchCore(aArg) {
 	return deferred.promise;
 }
 
+function setApplyBackgroundUpdates(aNewApplyBackgroundUpdates) {
+	// 0 - off, 1 - respect global setting, 2 - on
+	AddonManager.getAddonByID(core.addon.id, addon =>
+		addon.applyBackgroundUpdates = aNewApplyBackgroundUpdates
+	);
+}
+
 function getAddonInfo(aAddonId=core.addon.id) {
 	var deferredmain_getaddoninfo = new Deferred();
 	AddonManager.getAddonByID(aAddonId, addon =>
 		deferredmain_getaddoninfo.resolve({
-			applyBackgroundUpdates: parseInt(addon.applyBackgroundUpdates) === 1 ? (parseInt(AddonManager.autoUpdateDefault) ? 2 : 0) : parseInt(addon.applyBackgroundUpdates),
-			updateDate: addon.updateDate.getTime(),
-			version: addon.version
+			applyBackgroundUpdates: parseInt(addon.applyBackgroundUpdates) === 1 ? (AddonManager.autoUpdateDefault ? 2 : 0) : parseInt(addon.applyBackgroundUpdates),
+			updateDate: addon.updateDate.getTime()
 		})
 	);
 
 	return deferredmain_getaddoninfo.promise;
+}
+
+var gBroadcastPrefsTimeout = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
+function timedBroadcastPrefs() {
+	gBroadcastPrefsTimeout.cancel();
+	xpcomSetTimeout(gBroadcastPrefsTimeout, 1000, broadcastPrefs);
+}
+function broadcastPrefs() {
+	fetchFilestoreEntry({mainkey:'prefs'}).then(aPrefs => {
+		var windows = Services.wm.getEnumerator('navigator:browser');
+		while (windows.hasMoreElements()) {
+			var window = windows.getNext();
+			var tabs = window.gBrowser.tabContainer.childNodes;
+			for (var tab of tabs) {
+				// console.log('injecting into:', tab.linkedBrowser.currentURI.spec);
+				callInFramescript('broadcastPrefs', aPrefs, null, tab.linkedBrowser.messageManager);
+			}
+		}
+	});
 }
 
 // start - common helper functions

@@ -65,10 +65,13 @@ shouldUpdateHydrantEx = function() {
 			if (!gSupressUpdateHydrantExOnce) {
 				// update file stores or whatever store this key in hydrant_ex is connected to
 				if (hydrant_ex_instructions.filestore_entries && hydrant_ex_instructions.filestore_entries.includes(p)) {
-					callInMainworker('updateFilestoreEntry', {
+					callInBootstrap('updateFilestoreEntry', {
 						mainkey: p,
 						value: state[p]
-					})
+					});
+					if (p == 'prefs') {
+						callInBootstrap('timedBroadcastPrefs');
+					}
 				} else if (p == 'addon_info') {
 					// make sure it is just applyBackgroundUpdates, as i only support changing applyBackgroundUpdates
 					if (hydrant_ex.addon_info.applyBackgroundUpdates !== state.addon_info.applyBackgroundUpdates) {
@@ -109,7 +112,7 @@ var Header = React.createClass({
 var Rows = React.createClass({
 	render: function() {
 		return React.createElement(ReactBootstrap.Grid, { className:'pref-rows' },
-			React.createElement(RowPrefContainer, { name:'autoupdate', type:'buttons', buttons:[{name:'off',value:0},{name:'on',value:2}], setter:setAddonInfo }),
+			React.createElement(RowPrefContainer, { name:'autoupdate', type:'buttons', buttons:[{name:'off',value:0},{name:'on',value:2}], setter:setAddonInfo, locale_replace:[core.addon.version, formatTime(hydrant_ex.addon_info.updateDate, { time:false })] }),
 			React.createElement(RowPrefContainer, { name:'holdtime', type:'number', min:100 }),
 			React.createElement(RowPrefContainer, { name:'holddist', type:'number', min:0 }),
 			React.createElement(RowPrefContainer, { name:'zoommargin', type:'number', min:0 })
@@ -120,7 +123,7 @@ var Rows = React.createClass({
 
 var RowPref = React.createClass({
 	render: function() {
-		var { type, min, max, buttons, name } = this.props; // attributes
+		var { type, min, max, buttons, name, locale_replace } = this.props; // attributes
 		var { value } = this.props; // mapped state
 		var { setValue } = this.props; // dispatchers
 
@@ -130,6 +133,7 @@ var RowPref = React.createClass({
 		 * buttons - array; default=ERROR; only if type "buttons". array of objects. `name` is l10n key of button caption, and `value` is value. the array is sorted and displayed in alpha order after localization.
 		 * setter - function; default=setPref.bind(null, name); should be a dispatcher, as redux will wrap this in `disspatch()`
 		 * name - string; default=ERROR; used in `formatStringFromNameCore` to get label and description. also used with setPref
+		 * locale_replace - array for use with `formatStringFromNameCore` when getting desc
 		 */
 
 
@@ -151,7 +155,7 @@ var RowPref = React.createClass({
 				formatStringFromNameCore(name, 'main')
 			),
 			React.createElement(ReactBootstrap.Col, { lg:9, md:9, sm:7, xsHidden:true },
-				formatStringFromNameCore(name + '_desc', 'main')
+				formatStringFromNameCore(name + '_desc', 'main', locale_replace)
 			),
 			React.createElement(ReactBootstrap.Col, { lg:1, md:1, sm:2, xs:4 },
 				React.createElement(type_to_rcls[type], type_to_props[type])
@@ -172,7 +176,7 @@ var ButtonGroup = React.createClass({
 		var buttons_sorted = buttons.map(el=>Object.assign({}, el, {locale:formatStringFromNameCore(el.name, 'main')})).sort((a,b)=>a.locale.localeCompare(b.locale));
 
 		return React.createElement(ReactBootstrap.ButtonGroup, { justified:true },
-			buttons_sorted.map( el => React.createElement(ReactBootstrap.Button, { onClick:setValue.bind(null, el.value) }, el.locale) )
+			buttons_sorted.map( el => React.createElement(ReactBootstrap.Button, { active:value===el.value, onClick:setValue.bind(null, el.value) }, el.locale) )
 		)
 	}
 });
@@ -464,7 +468,7 @@ function setPref(pref, value) {
 		value
 	}
 }
-function setAddonInfo(info, value) {
+function setAddonInfo(value, info='applyBackgroundUpdates') {
 	return {
 		type: SET_ADDON_INFO,
 		info,
@@ -481,7 +485,6 @@ function setMainKeys(obj_of_mainkeys) {
 
 // REDUCERS
 function prefs(state=hydrant_ex.prefs, action) {
-	console.log('in prefs hydrant_ex:', hydrant_ex);
 	switch (action.type) {
 		case SET_PREF:
 			var { pref, value } = action;
