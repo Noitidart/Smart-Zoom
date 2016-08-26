@@ -49,14 +49,12 @@ var pageLoader = {
 		var contentWindow = aContentWindow;
 		// console.log('PAGE READYYYYYY:', contentWindow.location.href);
 
-		console.error('here, href:', contentWindow.location.href);
 		// var match = pageLoader.matches(contentWindow.location.href, contentWindow.location);
 		switch (pageLoader.matches(contentWindow.location.href, contentWindow.location)) {
 			case MATCH_APP:
 					gCommScope.gWinComm = gWinComm = new gCommScope.Comm.server.content(contentWindow);
 				break;
 		}
-		console.error('here2, href:', contentWindow.location.href);
 
 		// all pages should get MainContentscript.js
 		var principal = contentWindow.document.nodePrincipal; // contentWindow.location.origin (this is undefined for about: pages) // docShell.chromeEventHandler.contentPrincipal (chromeEventHandler no longer has contentPrincipal)
@@ -314,6 +312,7 @@ gCommScope.uninit = function() { // link4757484773732
 	}, '*');
 	if (gSandbox) {
 		Cu.nukeSandbox(gSandbox);
+		console.error('ok nuked sandbox');
 		gSandbox = null;
 	}
 

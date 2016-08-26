@@ -24,23 +24,24 @@ uninitAppPage = function() {
 
 focusAppPage = function() {
 	console.error('focused!!!!!!');
-	// callInBootstrap('fetchCore', { nocore:true, hydrant_ex_instructions }, function(aArg) {
-	// 	var differents; // key is mainkey
-	// 	for (var p in aArg.hydrant_ex) {
-	// 		var is_different = React.addons.shallowCompare({props:hydrant_ex[p]}, aArg.hydrant_ex[p]);
-	// 		console.error('hydrant_ex.' + p + ' is_different:', is_different);
-	// 		if (is_different) {
-	// 			if (!differents) {
-	// 				differents = {};
-	// 			}
-	// 			differents[p] = aArg.hydrant_ex[p];
-	// 		}
-	// 	}
-	//
-	// 	if (differents) {
-	// 		store.dispatch(setMainKeys(differents));
-	// 	}
-	// });
+	callInBootstrap('fetchCore', { nocore:true, hydrant_ex_instructions }, function(aArg) {
+		store.dispatch(setMainKeys(aArg.hydrant_ex));
+		// var differents; // key is mainkey
+		// for (var p in aArg.hydrant_ex) {
+		// 	var is_different = React.addons.shallowCompare({props:hydrant_ex[p]}, aArg.hydrant_ex[p]);
+		// 	console.error('hydrant_ex.' + p + ' is_different:', is_different);
+		// 	if (is_different) {
+		// 		if (!differents) {
+		// 			differents = {};
+		// 		}
+		// 		differents[p] = aArg.hydrant_ex[p];
+		// 	}
+		// }
+		//
+		// if (differents) {
+		// 	store.dispatch(setMainKeys(differents));
+		// }
+	});
 }
 
 shouldUpdateHydrantEx = function() {
@@ -147,7 +148,7 @@ var RowPref = React.createClass({
 
 		var type_to_props = { // type to props for react class
 			buttons: { value, setValue, buttons },
-			number: { defaultValue:value, id:name, dispatcher:setValue, min, max, noparent:true }
+			number: { defaultValue:value, id:name, dispatcher:setValue, min, max, parent_noactions:true }
 		};
 
 		return React.createElement(ReactBootstrap.Row, undefined,
@@ -197,7 +198,8 @@ var InputNumber = React.createClass({
 			min: undefined, // optional
 			max: undefined, // optional
 			dispatcher: undefined, // not optional, must be provided by parent component // dispatcher is a function that takes one argument. and will pass this argment to dispatch(actionCreator(...))
-			noparent: false // set this to true if you dont want any of the functionalities on the parent node
+			parent_noactions: false, // set this to true if you dont want any of the functionalities on the parent node
+			parent_novalidation: false
 		};
 
 		for (var name in progPropDefaults) {
@@ -225,8 +227,18 @@ var InputNumber = React.createClass({
 			React.createElement(ReactBootstrap.FormControl, domProps)
 		);
 	},
+	componentDidUpdate: function(prevProps, prevState) {
+		console.log('input number updated, prevProps.defaultValue:', prevProps.defaultValue, 'nowProps.defaultValue:', this.props.defaultValue, 'dom.value:', this.value);
+		if (this.props.defaultValue != this.value) {
+			// need to update value
+			this.value = this.props.defaultValue;
+			ReactDOM.findDOMNode(this.refs.input).value = this.value;
+			// update dom error class
+			this.setValid();
+		}
+	},
 	componentDidMount: function() {
-		if (!this.props.noparent) {
+		if (!this.props.parent_noactions) {
 			ReactDOM.findDOMNode(this.refs.input).parentNode.addEventListener('wheel', this.wheel, false);
 		}
 
@@ -238,7 +250,7 @@ var InputNumber = React.createClass({
 		this.setValid(); // this will set this.valid for me
 		console.log('ok mounted');
 
-		if (!this.props.noparent) {
+		if (!this.props.parent_noactions) {
 			// set up parent node mouse drag stuff
 			ReactDOM.findDOMNode(this.refs.input).parentNode.classList.add('inputnumber-parent');
 			ReactDOM.findDOMNode(this.refs.input).parentNode.addEventListener('mousedown', this.mousedown, false);
@@ -246,7 +258,7 @@ var InputNumber = React.createClass({
 	},
 	comonentWillUnmount: function() {
 		// TODO: figure out if on reconcile, if this wheel event is still on it
-		if (!this.props.noparent) {
+		if (!this.props.parent_noactions) {
 		    ReactDOM.findDOMNode(this.refs.input).parentNode.removeEventListener('wheel', this.wheel, false);
 			ReactDOM.findDOMNode(this.refs.input).parentNode.classList.remove('inputnumber-parent');
 		}
@@ -260,11 +272,11 @@ var InputNumber = React.createClass({
 			this.valid = valid;
 			console.log('this.valid updated to:', valid);
 			if (!valid) {
-				if (!this.props.noparent) {
+				if (!this.props.parent_novalidation) {
 					ReactDOM.findDOMNode(this.refs.input).parentNode.classList.add('has-error');
 				}
 			} else {
-				if (!this.props.noparent) {
+				if (!this.props.parent_novalidation) {
 					ReactDOM.findDOMNode(this.refs.input).parentNode.classList.remove('has-error');
 				}
 			}
@@ -476,6 +488,7 @@ function setAddonInfo(value, info='applyBackgroundUpdates') {
 	}
 }
 function setMainKeys(obj_of_mainkeys) {
+	Object.assign(hydrant_ex, obj_of_mainkeys);
 	gSupressUpdateHydrantExOnce = true;
 	return {
 		type: SET_MAIN_KEYS,
@@ -494,6 +507,9 @@ function prefs(state=hydrant_ex.prefs, action) {
 		case SET_MAIN_KEYS:
 			var { obj_of_mainkeys } = action;
 			var mainkey = 'prefs';
+			if (mainkey in obj_of_mainkeys) {
+				console.error('yes updating state with new prefs');
+			}
 			return (mainkey in obj_of_mainkeys ? obj_of_mainkeys[mainkey] : state);
 		default:
 			return state;

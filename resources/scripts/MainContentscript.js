@@ -37,6 +37,7 @@ function uninit() {
 	document.removeEventListener('mousedown', onMouseDown, true);
 	document.removeEventListener('mouseup', onMouseUp, true);
 	document.removeEventListener('click', onClick, true);
+	window.removeEventListener('message', csWinMsgListener, true);
 	console.log('finished unint of href:', window.location.href);
 }
 
