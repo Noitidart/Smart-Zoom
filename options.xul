@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<vbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-	<setting pref="extensions.Zoomr@jetpack.holdTime" title="Hold Time" type="integer">
-		Time to hold mouse button before zoom is triggered.
-	</setting>
-</vbox>
