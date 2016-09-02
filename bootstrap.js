@@ -100,7 +100,7 @@ function startup(aData, aReason) {
 }
 
 function shutdown(aData, aReason) {
-	// callInMainworker('writeFilestore'); // do even on APP_SHUTDOWN
+	writeFilestore(); // callInMainworker('writeFilestore'); // do even on APP_SHUTDOWN
 
 	if (aReason == APP_SHUTDOWN) {
 		return;
@@ -109,8 +109,6 @@ function shutdown(aData, aReason) {
 	Services.mm.removeDelayedFrameScript(core.addon.path.scripts + 'MainFramescript.js?' + core.addon.cache_key);
 
     Comm.server.unregAll('framescript');
-
-	writeFilestore();
 
 	for (var timerid in gTempTimers) {
 		var timer = gTempTimers[timerid];
@@ -223,23 +221,6 @@ function broadcastPrefs() {
 }
 
 // start - common helper functions
-function formatStringFromNameCore(aLocalizableStr, aLoalizedKeyInCoreAddonL10n, aReplacements) {
-	// 051916 update - made it core.addon.l10n based
-    // formatStringFromNameCore is formating only version of the worker version of formatStringFromName, it is based on core.addon.l10n cache
-
-	try { var cLocalizedStr = core.addon.l10n[aLoalizedKeyInCoreAddonL10n][aLocalizableStr]; if (!cLocalizedStr) { throw new Error('localized is undefined'); } } catch (ex) { console.error('formatStringFromNameCore error:', ex, 'args:', aLocalizableStr, aLoalizedKeyInCoreAddonL10n, aReplacements); } // remove on production
-
-	var cLocalizedStr = core.addon.l10n[aLoalizedKeyInCoreAddonL10n][aLocalizableStr];
-	// console.log('cLocalizedStr:', cLocalizedStr, 'args:', aLocalizableStr, aLoalizedKeyInCoreAddonL10n, aReplacements);
-    if (aReplacements) {
-        for (var i=0; i<aReplacements.length; i++) {
-            cLocalizedStr = cLocalizedStr.replace('%S', aReplacements[i]);
-        }
-    }
-
-    return cLocalizedStr;
-}
-
 function xhrSync(aUrl) {
 	// notes to amo reviewer - i only use this for local files
 	var xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1'].createInstance(Ci.nsIXMLHttpRequest);
@@ -248,7 +229,7 @@ function xhrSync(aUrl) {
 	return xhr;
 }
 
-// rev5 - for mainthread just change xhr to xhrSync not yet comitted to gist.github as of 082516 - https://gist.github.com/Noitidart/6d8a20739b9a4a97bc47
+// rev1 - https://gist.github.com/Noitidart/0de3bc1c9f7f4ceacedd722f84d302e0
 var _cache_formatStringFromName_packages = {}; // holds imported packages
 function formatStringFromName(aKey, aLocalizedPackageName, aReplacements) {
 	// depends on ```core.addon.path.locale``` it must be set to the path to your locale folder
@@ -276,7 +257,7 @@ function formatStringFromName(aKey, aLocalizedPackageName, aReplacements) {
 		var propPatt = /(.*?)=(.*?)$/gm;
 		var propMatch;
 		while (propMatch = propPatt.exec(packageStr)) {
-			packageJson[propMatch[1]] = propMatch[2];
+			packageJson[propMatch[1].trim()] = propMatch[2];
 		}
 
 		_cache_formatStringFromName_packages[packageName] = packageJson;
